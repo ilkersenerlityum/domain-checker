@@ -35,4 +35,4 @@ jobs:
           subject: "Domain Kontrol Uyarısı!"
           body: "⚠️ Domainlerde sorun tespit edildi!"
           to: "ilker@lityum.com"
-          from: "ilker@lityum.com"
+          from: "ilkersener555@gmail.com"
