@@ -35,4 +35,4 @@ jobs:
           subject: "Domain Kontrol Uyarısı!"
           body: "⚠️ Domainlerde sorun tespit edildi!"
           to: "ilker@lityum.com"
-          from: "Bot <bot@example.com>"
+          from: "ilker@lityum.com"
