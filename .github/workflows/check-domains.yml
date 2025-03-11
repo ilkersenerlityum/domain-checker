@@ -33,6 +33,6 @@ jobs:
           username: ${{ secrets.EMAIL_USER }}
           password: ${{ secrets.EMAIL_PASS }}
           subject: "Domain Kontrol Uyarısı!"
-          body: "Bazı domainlerde sorun tespit edildi!"
-          to: "senin-email@example.com"
+          body: "⚠️ Domainlerde sorun tespit edildi!"
+          to: "ilker@lityum.com"
           from: "Bot <bot@example.com>"
