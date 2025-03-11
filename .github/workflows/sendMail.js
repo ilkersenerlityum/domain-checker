@@ -11,7 +11,7 @@ const sendEmail = async (message) => {
 
   let mailOptions = {
     from: process.env.EMAIL_USER,
-    to: 'seninmail@ornek.com',
+    to: 'ilker@lityum.com',
     subject: '🚨 Domain İçeriği Eksik!',
     text: message
   };

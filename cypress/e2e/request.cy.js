@@ -10,7 +10,7 @@ describe('Domain Content Check', () => {
   domains.forEach((domain) => {
     it(`Checking ${domain.url}`, () => {
       cy.visit(domain.url, { failOnStatusCode: false });
-      cy.wait(2000)
+      cy.wait(3000)
 
       cy.get('body').then(($body) => {
         if ($body.find(domain.selector).length === 0) {
