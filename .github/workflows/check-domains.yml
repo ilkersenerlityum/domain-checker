@@ -1,25 +1,38 @@
-name: Domain Content Check
+name: Check Domains
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # Her 5 dakikada bir çalıştır
-  workflow_dispatch: # Manuel çalıştırma için
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
 
 jobs:
-  test:
+  check_domains:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Depoyu Kopyala
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v18
+      - name: Node.js Kur
+        uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: "18"
 
-      - name: Install dependencies
+      - name: Bağımlılıkları Yükle
         run: npm install
 
-      - name: Run Cypress tests
-        run: npx cypress run --spec cypress/e2e/request.cy.js | | (node sendMail.js "🚨 Uyarı bir domain içeriği eksik!" && exit 1)
+      - name: Testleri Çalıştır
+        run: npx cypress run
+
+      - name: Hata Durumunda E-posta Gönder
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASS }}
+          subject: "Domain Kontrol Uyarısı!"
+          body: "Bazı domainlerde sorun tespit edildi!"
+          to: "senin-email@example.com"
+          from: "Bot <bot@example.com>"
