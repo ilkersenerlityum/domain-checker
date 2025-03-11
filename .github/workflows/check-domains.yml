@@ -39,8 +39,10 @@ jobs:
       - name: Send Message to Google Chat
         if: failure()
         run: |
-          # PowerShell'de curl kullanımı için tam yolu belirtiyoruz
-          C:\Windows\System32\curl.exe -X POST -H "Content-Type: application/json" \
-            -d '{"text": "🚨 Domainlerde sorun tespit edildi! Test başarısız oldu."}' \
-            "https://chat.googleapis.com/v1/spaces/AAAAwMjP3Sw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=i49oCA6iZzjnInJlJP32a-xE_kkqQuH44R8_SnbcSt0"
+          $uri = "https://chat.googleapis.com/v1/spaces/AAAAwMjP3Sw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=i49oCA6iZzjnInJlJP32a-xE_kkqQuH44R8_SnbcSt0"
+          $body = @{
+              text = "🚨 Domainlerde sorun tespit edildi! Test başarısız oldu."
+          } | ConvertTo-Json
+
+          Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
         shell: pwsh
