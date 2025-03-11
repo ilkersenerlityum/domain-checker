@@ -21,6 +21,10 @@ jobs:
       - name: Bağımlılıkları Yükle
         run: npm install
 
+      - name: Install Cypress
+        run: npx cypress install
+      
+
       - name: Testleri Çalıştır
         run: npx cypress run
 
