@@ -1,0 +1,25 @@
+name: Domain Content Check
+
+on:
+  schedule:
+    - cron: '*/5 * * * *' # Her 5 dakikada bir çalıştır
+  workflow_dispatch: # Manuel çalıştırma için
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v18
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Cypress tests
+        run: npx cypress run --spec cypress/e2e/request.cy.js | | (node sendMail.js "🚨 Uyarı bir domain içeriği eksik!" && exit 1)
