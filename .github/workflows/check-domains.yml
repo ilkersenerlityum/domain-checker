@@ -17,13 +17,21 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "18"
+          cache: "npm"
+
+      - name: Cypress Binary Cache Kullan
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-
 
       - name: Bağımlılıkları Yükle
-        run: npm install
+        run: npm ci
 
-      - name: Install Cypress
-        run: npx cypress install
-      
+      - name: Cypress Cache Kontrol ve Yükleme
+        run: npx cypress install || echo "Cypress zaten yüklü"
 
       - name: Testleri Çalıştır
         run: npx cypress run
