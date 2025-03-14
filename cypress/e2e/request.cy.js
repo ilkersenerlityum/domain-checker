@@ -9,8 +9,10 @@ describe('Domain Content Check', () => {
 
   let failedDomains = [];
 
-  const webhookURL = "https://chat.googleapis.com/v1/spaces/AAAAwMjP3Sw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=i49oCA6iZzjnInJlJP32a-xE_kkqQuH44R8_SnbcSt0";
+  require('dotenv').config();
 
+  const webhookURL = process.env.GOOGLE_CHAT_WEBHOOK_URL;
+  
   domains.forEach((domain) => {
     it(`Checking ${domain.url}`, () => {
       cy.visit(domain.url, { failOnStatusCode: false });

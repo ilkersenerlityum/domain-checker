@@ -39,7 +39,7 @@ jobs:
       - name: Send Message to Google Chat
         if: failure()
         run: |
-          $uri = "https://chat.googleapis.com/v1/spaces/AAAAwMjP3Sw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=i49oCA6iZzjnInJlJP32a-xE_kkqQuH44R8_SnbcSt0"
+          $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
           $body = @{
               text = "🚨 Domainlerde sorun tespit edildi! Test başarısız oldu."
           } | ConvertTo-Json
