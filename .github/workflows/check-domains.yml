@@ -33,16 +33,25 @@ jobs:
       - name: Cypress Cache Kontrol ve Yükleme
         run: npx cypress install || echo "Cypress zaten yüklü"
 
-      - name: Testleri Çalıştır
-        run: npx cypress run
+      - name: Testleri Çalıştır ve Logları Kaydet
+        run: npx cypress run | tee cypress-output.log
 
-      - name: Send Message to Google Chat
+      - name: Hatalı Domainleri Google Chat'e Gönder
         if: failure()
         run: |
+          # Hataları içeren log dosyasını oku
+          $failedTests = (Get-Content cypress-output.log) -match "🚨"
+
+          if ($failedTests.Count -gt 0) {
+              # Hata mesajlarını birleştir
+              $message = "🚨 Domainlerde sorun tespit edildi!\n" + ($failedTests -join "`n")
+          } else {
+              $message = "🚨 Domainlerde sorun tespit edildi! (Ancak hata detayları loglarda bulunamadı.)"
+          }
+
+          # Google Chat Webhook'una mesaj gönder
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
-          $body = @{
-              text = "🚨 Domainlerde sorun tespit edildi! Test başarısız oldu."
-          } | ConvertTo-Json
+          $body = @{ text = $message } | ConvertTo-Json
 
           Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
         shell: pwsh
