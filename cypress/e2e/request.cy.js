@@ -3,7 +3,7 @@ const { exec } = require('child_process');
 describe('Domain Content Check', () => {
   const domains = [
     { url: 'https://demo.peoplebox.biz/user/login', selector: '._main_1p1ww_22', errorMessage: '🚨 DO SUNUCUSU PATLADI!' },
-    { url: 'https://demo2.peoplebox.biz/user/login', selector: '._main_1p1ww_22123', errorMessage: '🚨 SH2 SUNUCUSU PATLADI!' },
+    { url: 'https://demo2.peoplebox.biz/user/login', selector: '.testeestest', errorMessage: '🚨 SH2 SUNUCUSU PATLADI!' },
     { url: 'https://demo9.peoplebox.biz/user/login', selector: '._main_1p1ww_22', errorMessage: '🚨 KNET SUNUCUSU PATLADI!' }
   ];
 
