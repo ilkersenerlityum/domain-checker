@@ -34,7 +34,7 @@ jobs:
         run: npx cypress install || echo "Cypress zaten yüklü"
 
       - name: Testleri Çalıştır ve Logları Kaydet
-        run: npx cypress run --reporter=spec | tee cypress-output.log
+        run: npx cypress run --reporter=dot | tee cypress-output.log
       
       - name: Hatalı Domainleri Google Chat'e Gönder
         if: failure()
