@@ -36,10 +36,11 @@ jobs:
       - name: Testleri Çalıştır ve Logları Kaydet
         run: npx cypress run --reporter=dot | tee cypress-output.log
 
-      - name: Süreleri Kaldır
+      - name: ANSI Renk Kodlarını Kaldır
         run: |
-          (Get-Content cypress-output.log) -replace "\d+m \d+s", "" | Set-Content cypress-output.log
+          (Get-Content cypress-output.log) -replace "\e\[[0-9;]*m", "" | Set-Content cypress-output.log
         shell: pwsh
+      
 
       - name: Hatalı Domainleri Google Chat'e Gönder
         if: failure()
