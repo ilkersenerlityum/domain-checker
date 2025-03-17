@@ -9,7 +9,7 @@ describe("Domain Content Check", () => {
     },
     {
       url: "https://demo2.peoplebox.biz/user/login",
-      selector: ".testeestest",
+      selector: "._main_1p1ww_22",
       errorMessage: "🚨 SH2 SUNUCUSU PATLADI!",
     },
     {
