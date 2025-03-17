@@ -2,12 +2,12 @@ const { exec } = require('child_process');
 
 describe('Domain Content Check', () => {
   const domains = [
-    { url: 'https://demo.peoplebox.biz/user/login', selector: '._main_1p1ww_22', errorMessage: '🚨  DO SUNUCUSU PATLADI!  🚨' },
-    { url: 'https://demo2.peoplebox.biz/user/login', selector: '._main_1p1ww_221414', errorMessage: '🚨  SH2 SUNUCUSU PATLADI!  🚨' },
-    { url: 'https://demo9.peoplebox.biz/user/login', selector: '._main_1p1ww_22', errorMessage: '🚨  KNET SUNUCUSU PATLADI!  🚨' }
+    { url: 'https://demo.peoplebox.biz/user/login', selector: '._main_1p1ww_22', errorMessage: '🚨 DO SUNUCUSU PATLADI!' },
+    { url: 'https://demo2.peoplebox.biz/user/login', selector: '._main_1p1ww_22123', errorMessage: '🚨 SH2 SUNUCUSU PATLADI!' },
+    { url: 'https://demo9.peoplebox.biz/user/login', selector: '._main_1p1ww_22', errorMessage: '🚨 KNET SUNUCUSU PATLADI!' }
   ];
 
-  const webhookURL = "https://chat.googleapis.com/v1/spaces/AAAAwMjP3Sw/messages?key=API_KEY&token=TOKEN";
+  let failedDomains = [];
 
   domains.forEach((domain) => {
     it(`Checking ${domain.url}`, () => {
@@ -17,24 +17,24 @@ describe('Domain Content Check', () => {
       cy.get('body').then(($body) => {
         if ($body.find(domain.selector).length === 0) {
           cy.log(domain.errorMessage);
-          
-          // Hata mesajını domain ile birlikte oluştur
-          const chatMessage = `⚠️ *Domain Hatası!* \n${domain.errorMessage}\n🌐 *Hatalı URL:* ${domain.url}`;
-          
-          // Google Chat'e mesaj gönderme
-          const curlCommand = `curl -X POST -H "Content-Type: application/json" -d "{\\"text\\": \\"${chatMessage}\\"}" "${webhookURL}"`;
+          failedDomains.push(`🌐 ${domain.url} → ${domain.errorMessage}`);
 
-          exec(curlCommand, (err, stdout, stderr) => {
-            if (err) {
-              console.error('❌ Google Chat mesajı gönderilemedi:', err);
-            } else {
-              console.log('✅ Google Chat mesajı gönderildi:', stdout);
-            }
-          });
+          // **LOG dosyasına hatayı yazdır**
+          console.log(`🚨 HATA: ${domain.url} → ${domain.errorMessage}`);
         } else {
           cy.log(`✅ ${domain.url} is OK!`);
         }
       });
     });
+  });
+
+  after(() => {
+    if (failedDomains.length > 0) {
+      console.log("🔥 HATALI DOMAINLER:");
+      failedDomains.forEach(msg => console.log(msg));
+
+      const errorMessage = `⚠️ *Domain Hataları Tespit Edildi!* \n${failedDomains.join('\n')}`;
+      cy.log(errorMessage);
+    }
   });
 });
