@@ -35,7 +35,12 @@ jobs:
 
       - name: Testleri Çalıştır ve Logları Kaydet
         run: npx cypress run --reporter=dot | tee cypress-output.log
-      
+
+      - name: Süreleri Kaldır
+        run: |
+          (Get-Content cypress-output.log) -replace "\d+m \d+s", "" | Set-Content cypress-output.log
+        shell: pwsh
+
       - name: Hatalı Domainleri Google Chat'e Gönder
         if: failure()
         run: |
@@ -59,4 +64,3 @@ jobs:
       
           Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
         shell: pwsh
-      
