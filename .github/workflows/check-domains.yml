@@ -35,23 +35,28 @@ jobs:
 
       - name: Testleri Çalıştır ve Logları Kaydet
         run: npx cypress run --reporter=spec | tee cypress-output.log
-
+      
       - name: Hatalı Domainleri Google Chat'e Gönder
         if: failure()
         run: |
-          # **LOG dosyasını oku ve sadece "🚨 HATA" içeren satırları al**
-          $failedTests = (Get-Content cypress-output.log) | Where-Object { $_ -match "🚨 HATA" }
-
+          # LOG dosyasını oku
+          $logPath = "cypress-output.log"
+          if (Test-Path $logPath) {
+              $failedTests = Get-Content $logPath | Select-String "🚨 HATA" -AllMatches
+          } else {
+              $failedTests = @()
+          }
+      
           if ($failedTests.Count -gt 0) {
-              # **Hata mesajlarını birleştir**
               $message = "🚨 Domainlerde sorun tespit edildi!\n\n" + ($failedTests -join "`n")
           } else {
               $message = "🚨 Domainlerde sorun tespit edildi! (Ancak hata detayları loglarda bulunamadı.)"
           }
-
-          # **Google Chat Webhook'una mesaj gönder**
+      
+          # Mesajı Google Chat'e gönder
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
-          $body = @{ text = $message } | ConvertTo-Json
-
+          $body = @{ text = $message } | ConvertTo-Json -Depth 10
+      
           Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
         shell: pwsh
+      
