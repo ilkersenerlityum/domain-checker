@@ -11,19 +11,27 @@ describe('Domain Content Check', () => {
 
   domains.forEach((domain) => {
     it(`Checking ${domain.url}`, () => {
-      cy.visit(domain.url, { failOnStatusCode: false });
+      // Sayfa çalışıyor mu kontrol et
+      cy.request({
+        url: domain.url,
+        failOnStatusCode: false
+      }).then((response) => {
+        if (response.status >= 400) {
+          cy.log(`🚨 ${domain.url} açılırken hata aldı: ${response.status}`);
+          throw new Error(`🚨 ${domain.url} açılırken hata aldı: ${response.status}`);
+        }
+      });
+
+      cy.visit(domain.url);
       cy.wait(3000);
 
-      cy.get('body').then(($body) => {
-        if ($body.find(domain.selector).length === 0) {
-          cy.log(domain.errorMessage);
-          failedDomains.push(`🌐 ${domain.url} → ${domain.errorMessage}`);
-
-          // **LOG dosyasına hatayı yazdır**
-          console.log(`🚨 HATA: ${domain.url} → ${domain.errorMessage}`);
-        } else {
-          cy.log(`✅ ${domain.url} is OK!`);
-        }
+      cy.get(domain.selector, { timeout: 3000 }).should('exist').then(() => {
+        cy.log(`✅ ${domain.url} is OK!`);
+      }).catch(() => {
+        cy.log(domain.errorMessage);
+        failedDomains.push(`🌐 ${domain.url} → ${domain.errorMessage}`);
+        console.log(`🚨 HATA: ${domain.url} → ${domain.errorMessage}`);
+        throw new Error(`🚨 HATA: ${domain.url} → ${domain.errorMessage}`);
       });
     });
   });
@@ -32,9 +40,7 @@ describe('Domain Content Check', () => {
     if (failedDomains.length > 0) {
       console.log("🔥 HATALI DOMAINLER:");
       failedDomains.forEach(msg => console.log(msg));
-
-      const errorMessage = `⚠️ *Domain Hataları Tespit Edildi!* \n${failedDomains.join('\n')}`;
-      cy.log(errorMessage);
+      throw new Error(`⚠️ *Domain Hataları Tespit Edildi!* \n${failedDomains.join('\n')}`);
     }
   });
 });
