@@ -34,22 +34,22 @@ jobs:
         run: npx cypress install || echo "Cypress zaten yüklü"
 
       - name: Testleri Çalıştır ve Logları Kaydet
-        run: npx cypress run | tee cypress-output.log
+        run: npx cypress run --reporter=spec | tee cypress-output.log
 
       - name: Hatalı Domainleri Google Chat'e Gönder
         if: failure()
         run: |
-          # Hataları içeren log dosyasını oku
-          $failedTests = (Get-Content cypress-output.log) -match "🚨"
+          # **LOG dosyasını oku ve sadece "🚨 HATA" içeren satırları al**
+          $failedTests = (Get-Content cypress-output.log) | Where-Object { $_ -match "🚨 HATA" }
 
           if ($failedTests.Count -gt 0) {
-              # Hata mesajlarını birleştir
-              $message = "🚨 Domainlerde sorun tespit edildi!\n" + ($failedTests -join "`n")
+              # **Hata mesajlarını birleştir**
+              $message = "🚨 Domainlerde sorun tespit edildi!\n\n" + ($failedTests -join "`n")
           } else {
               $message = "🚨 Domainlerde sorun tespit edildi! (Ancak hata detayları loglarda bulunamadı.)"
           }
 
-          # Google Chat Webhook'una mesaj gönder
+          # **Google Chat Webhook'una mesaj gönder**
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
           $body = @{ text = $message } | ConvertTo-Json
 
