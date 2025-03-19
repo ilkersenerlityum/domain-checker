@@ -5,17 +5,17 @@ describe("Domain Content Check", () => {
     {
       url: "https://demo.peoplebox.biz/user/login",
       selector: "._main_1p1ww_22",
-      errorMessage: "🚨 DO SUNUCUSU PATLADI!",
+      errorMessage: "🚨 DO SUNUCUSUNU KONTROL EDİN!",
     },
     {
       url: "https://demo2.peoplebox.biz/user/login",
       selector: "._main_1p1ww_22",
-      errorMessage: "🚨 SH2 SUNUCUSU PATLADI!",
+      errorMessage: "🚨 SH2 SUNUCUSUNU KONTROL EDİN!",
     },
     {
       url: "https://demo9.peoplebox.biz/user/login",
       selector: "._main_1p1ww_22",
-      errorMessage: "🚨 KNET SUNUCUSU PATLADI!",
+      errorMessage: "🚨 KNET SUNUCUSUNU KONTROL EDİN!",
     },
   ];
 
@@ -23,7 +23,7 @@ describe("Domain Content Check", () => {
 
   domains.forEach((domain) => {
     it(`Checking ${domain.url}`, () => {
-      // Sayfa HTTP hatası veriyor mu kontrol et
+      // Sayfa HTTP hatası veriyor mu kontrol ediyoruz
       cy.request({
         url: domain.url,
         failOnStatusCode: false,
@@ -35,11 +35,10 @@ describe("Domain Content Check", () => {
         }
       });
 
-      // Sayfaya git
       cy.visit(domain.url, { failOnStatusCode: false });
       cy.wait(3000);
 
-      // Selector'un olup olmadığını test et
+      // Selector'un olup olmadığını kontrol ediyoruz
       cy.get("body").then(($body) => {
         if ($body.find(domain.selector).length === 0) {
           cy.log(domain.errorMessage);
@@ -62,7 +61,7 @@ describe("Domain Content Check", () => {
       )}`;
       cy.log(errorMessage);
 
-      // Cypress’in hataları yakalaması için bir error fırlat
+      // Cypress hataları yakalaması için bir error fırlatıyoruz
       throw new Error(errorMessage);
     }
   });

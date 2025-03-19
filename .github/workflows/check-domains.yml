@@ -56,7 +56,7 @@ jobs:
           if ($failedTests.Count -gt 0) {
               $message = "🚨 Domainlerde sorun tespit edildi!\n\n" + ($failedTests -join "`n")
           } else {
-              $message = "🚨 Domainlerde sorun tespit edildi! (Ancak hata detayları loglarda bulunamadı.)"
+              $message = "⚠️ Sunucuda yavaşlık!"
           }
       
           # Mesajı Google Chat'e gönder
