@@ -29,23 +29,24 @@ describe("Domain Content Check", () => {
         failOnStatusCode: false,
       }).then((response) => {
         if (response.status >= 400) {
-          cy.log(`🚨 ${domain.url} açılırken hata aldı: ${response.status}`);
-          failedDomains.push(`🌐 ${domain.url} → HTTP ERROR ${response.status}`);
-          throw new Error(`🚨 ${domain.url} açılırken hata aldı: ${response.status}`);
-        }
-      });
-
-      cy.visit(domain.url, { failOnStatusCode: false });
-      cy.wait(3000);
-
-      // Selector'un olup olmadığını kontrol ediyoruz
-      cy.get("body").then(($body) => {
-        if ($body.find(domain.selector).length === 0) {
-          cy.log(domain.errorMessage);
-          failedDomains.push(`🌐 ${domain.url} → ${domain.errorMessage}`);
-          throw new Error(`🚨 HATA: ${domain.url} → ${domain.errorMessage}`);
+          const errorMsg = `🚨 ${domain.url} açılırken hata aldı: ${response.status} → ${domain.errorMessage}`;
+          cy.log(errorMsg);
+          failedDomains.push(`🌐 ${domain.url} → ${errorMsg}`);
+          throw new Error(errorMsg);
         } else {
-          cy.log(`✅ ${domain.url} is OK!`);
+          cy.visit(domain.url, { failOnStatusCode: false });
+          cy.wait(3000);
+
+          // Selector'un olup olmadığını kontrol ediyoruz
+          cy.get("body").then(($body) => {
+            if ($body.find(domain.selector).length === 0) {
+              cy.log(domain.errorMessage);
+              failedDomains.push(`🌐 ${domain.url} → ${domain.errorMessage}`);
+              throw new Error(`🚨 HATA: ${domain.url} → ${domain.errorMessage}`);
+            } else {
+              cy.log(`✅ ${domain.url} is OK!`);
+            }
+          });
         }
       });
     });
@@ -56,9 +57,7 @@ describe("Domain Content Check", () => {
       console.log("🔥 HATALI DOMAINLER:");
       failedDomains.forEach((msg) => console.log(msg));
 
-      const errorMessage = `⚠️ *Domain Hataları Tespit Edildi!* \n${failedDomains.join(
-        "\n"
-      )}`;
+      const errorMessage = `⚠️ *Domain Hataları Tespit Edildi!* \n${failedDomains.join("\n")}`;
       cy.log(errorMessage);
 
       // Cypress hataları yakalaması için bir error fırlatıyoruz
