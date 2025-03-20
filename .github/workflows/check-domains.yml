@@ -55,8 +55,21 @@ jobs:
           } else {
               $failedTests = @()
           }
-      
-          if ($failedTests.Count -gt 0) {
+
+          # Hatalı domainleri belirle
+          $demoError = $failedTests | Select-String "demo.peoplebox.biz"
+          $demo2Error = $failedTests | Select-String "demo2.peoplebox.biz"
+          $demo9Error = $failedTests | Select-String "demo9.peoplebox.biz"
+
+          # Sunucu bazlı mesaj oluştur
+          $messages = @()
+          if ($demoError) { $messages += "🚨 DO SUNUCUSUNU KONTROL EDİN!" }
+          if ($demo2Error) { $messages += "🚨 SH2 SUNUCUSUNU KONTROL EDİN!" }
+          if ($demo9Error) { $messages += "🚨 KNET SUNUCUSUNU KONTROL EDİN!" }
+
+          if ($messages.Count -gt 0) {
+              $message = ($messages -join "`n") + "`n\n" + ($failedTests -join "`n")
+          } elseif ($failedTests.Count -gt 0) {
               $message = "🚨 Domainlerde sorun tespit edildi!\n\n" + ($failedTests -join "`n")
           } else {
               $message = "⚠️ Sunucuda yavaşlık!"
