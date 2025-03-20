@@ -19,6 +19,18 @@ jobs:
           node-version: "18"
           cache: "npm"
 
+      - name: Bağımlılıkları Önbelleğe Al
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Bağımlılıkları Yükle (Eğer Önbellek Yoksa)
+        run: npm ci
+        if: steps.cache.outputs.cache-hit != 'true'
+
       - name: Cypress Binary Cache Kullan
         uses: actions/cache@v3
         with:
@@ -27,20 +39,11 @@ jobs:
           restore-keys: |
             cypress-${{ runner.os }}-
 
-      - name: Bağımlılıkları Yükle
-        run: npm ci
-
       - name: Cypress Cache Kontrol ve Yükleme
         run: npx cypress install || echo "Cypress zaten yüklü"
 
       - name: Testleri Çalıştır ve Logları Kaydet
         run: npx cypress run --reporter=dot | tee cypress-output.log
-
-      - name: ANSI Renk Kodlarını Kaldır
-        run: |
-          (Get-Content cypress-output.log) -replace "\e\[[0-9;]*m", "" | Set-Content cypress-output.log
-        shell: pwsh
-      
 
       - name: Hatalı Domainleri Google Chat'e Gönder
         if: failure()
