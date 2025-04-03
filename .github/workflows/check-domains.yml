@@ -62,13 +62,25 @@ jobs:
           if ($failedTests | Select-String "demo9.peoplebox.biz") { $messages += "🚨 KNET SUNUCUSUNU KONTROL EDİN!" }
 
           if ($messages.Count -gt 0) {
-              $message = "⚠️ *Domain Hataları Tespit Edildi!*\n" + ($messages -join "`n")
+              $message = "⚠️ *Domain Hataları Tespit Edildi!*\n\n" + ($messages -join "`n")
           } else {
+              Write-Output "✅ Her şey yolunda, mesaj gönderilmiyor."
               exit 0  # Eğer hata yoksa mesaj göndermiyoruz
           }
 
-          # Mesajı Google Chat'e gönder
+          # Loglama: Mesaj içeriğini göster
+          Write-Output "📢 Google Chat'e gönderilecek mesaj:"
+          Write-Output $message
+
+          # Google Chat'e mesaj gönder
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
-          $body = @{ text = $message } | ConvertTo-Json -Depth 10
-          Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
+          $body = @{ text = $message } | ConvertTo-Json -Depth 10 -Compress
+          
+          try {
+              Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
+              Write-Output "✅ Google Chat mesajı başarıyla gönderildi!"
+          } catch {
+              Write-Output "❌ Google Chat mesajı gönderilemedi: $_"
+              exit 1
+          }
         shell: pwsh
