@@ -78,7 +78,7 @@ jobs:
           
           try {
               Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
-              Write-Output "✅ Google Chat mesajı başarıyla gönderildi!"
+              Write-Output "✅ Google Chat mesajı gönderildi!"
           } catch {
               Write-Output "❌ Google Chat mesajı gönderilemedi: $_"
               exit 1
