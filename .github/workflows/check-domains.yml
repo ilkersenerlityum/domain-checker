@@ -13,14 +13,6 @@ jobs:
       - name: Depoyu Kopyala
         uses: actions/checkout@v3
 
-      - name: Test Google Chat Webhook
-        run: |
-          $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
-          $body = @{ text = "🔴 Test Mesajı: Google Chat çalışıyor mu?" } | ConvertTo-Json -Depth 10
-          Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
-        shell: pwsh
-      
-
       - name: Node.js Kur
         uses: actions/setup-node@v3
         with:
