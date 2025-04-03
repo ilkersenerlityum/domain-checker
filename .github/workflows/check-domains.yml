@@ -46,18 +46,14 @@ jobs:
         run: npx cypress run --reporter=dot | tee cypress-output.log
 
       - name: Hatalı Domainleri Google Chat'e Gönder
-        if: always() # **Her durumda çalışsın**
+        if: failure() # Sadece hata varsa çalıştır
         run: |
           $logPath = "cypress-output.log"
           if (Test-Path $logPath) {
-              $failedTests = Get-Content $logPath | Select-String "🚨 HATA" -AllMatches
+              $failedTests = Get-Content $logPath | Select-String "🔥 LOG HATASI" -AllMatches
           } else {
               $failedTests = @()
           }
-      
-          # Cypress hata bulamadıysa, yine de logları göster
-          Write-Output "🔎 $failedTests İçeriği:"
-          Write-Output ($failedTests -join "`n")
       
           # Hatalı domainleri belirle
           $messages = @()
@@ -66,22 +62,22 @@ jobs:
           if ($failedTests | Select-String "demo9.peoplebox.biz") { $messages += "🚨 KNET SUNUCUSUNU KONTROL EDİN!" }
       
           if ($messages.Count -gt 0) {
-              $message = "⚠️ *Domain Hataları Tespit Edildi!*\n\n" + ($messages -join "`n")
+              $message = "⚠️ *Domain Hataları Tespit Edildi!*`n" + ($messages -join "`n")
           } else {
-              $message = "⚠️ Cypress loglarında hata bulunamadı, detayları kontrol edin!"
+              exit 0 # Eğer hata yoksa mesaj göndermeyelim
           }
       
-          # Logları ekrana yazdır
-          Write-Output "📢 Google Chat Mesajı:"
+          # Logları göster
+          Write-Output "📢 Google Chat'e gönderilecek mesaj:"
           Write-Output $message
       
           # Google Chat'e mesaj gönder
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
-          $body = @{ text = $message } | ConvertTo-Json -Depth 10 -Compress
-          
+          $body = @{ text = $message } | ConvertTo-Json -Depth 10
+      
           try {
               Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
-              Write-Output "✅ Google Chat mesajı başarıyla gönderildi!"
+              Write-Output "✅ Google Chat mesajı gönderildi!"
           } catch {
               Write-Output "❌ Google Chat mesajı gönderilemedi: $_"
               exit 1

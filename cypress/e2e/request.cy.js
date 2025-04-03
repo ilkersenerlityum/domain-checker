@@ -8,12 +8,12 @@ describe("Domain Content Check", () => {
       errorMessage: "🚨 DO SUNUCUSUNU KONTROL EDİN!",
     },
     {
-      url: "https://demo2123123.peoplebox.biz/user/login",
+      url: "https://demo21231.peoplebox.biz/user/login",
       selector: "._main_1p1ww_22",
       errorMessage: "🚨 SH2 SUNUCUSUNU KONTROL EDİN!",
     },
     {
-      url: "https://demo9123123.peoplebox.biz/user/login",
+      url: "https://demo912124.peoplebox.biz/user/login",
       selector: "._main_1p1ww_22",
       errorMessage: "🚨 KNET SUNUCUSUNU KONTROL EDİN!",
     },
@@ -30,11 +30,10 @@ describe("Domain Content Check", () => {
         if (response.status >= 400) {
           const errorMsg = `🚨 ${domain.url} açılırken hata aldı: ${response.status} → ${domain.errorMessage}`;
           cy.log(errorMsg);
-          failedDomains.push(`🌐 ${domain.url} → ${errorMsg}`);
-          console.error(errorMsg); // **Hata kesinlikle loglara düşsün diye**
+          failedDomains.push(errorMsg);
+          console.error("🔥 LOG HATASI:", errorMsg); // GitHub Actions loglarına yaz
           throw new Error(errorMsg);
-        }        
-        else {
+        } else {
           cy.visit(domain.url, { failOnStatusCode: false });
           cy.wait(3000);
 
@@ -42,6 +41,7 @@ describe("Domain Content Check", () => {
             if ($body.find(domain.selector).length === 0) {
               cy.log(domain.errorMessage);
               failedDomains.push(domain.errorMessage);
+              console.error("🔥 LOG HATASI:", domain.errorMessage); // GitHub Actions loglarına yaz
               throw new Error(`🚨 HATA: ${domain.url} → ${domain.errorMessage}`);
             } else {
               cy.log(`✅ ${domain.url} is OK!`);
@@ -53,10 +53,4 @@ describe("Domain Content Check", () => {
   });
 
   after(() => {
-    if (failedDomains.length > 0) {
-      const errorMessage = `⚠️ *Domain Hataları Tespit Edildi!* \n${failedDomains.join("\n")}`;
-      cy.log(errorMessage);
-      throw new Error(errorMessage);
-    }
-  });
-});
+    if (failed
