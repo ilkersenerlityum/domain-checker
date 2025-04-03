@@ -48,7 +48,6 @@ jobs:
       - name: Hatalı Domainleri Google Chat'e Gönder
         if: failure()
         run: |
-          # LOG dosyasını oku
           $logPath = "cypress-output.log"
           if (Test-Path $logPath) {
               $failedTests = Get-Content $logPath | Select-String "🚨 HATA" -AllMatches
@@ -57,27 +56,19 @@ jobs:
           }
 
           # Hatalı domainleri belirle
-          $demoError = $failedTests | Select-String "demo.peoplebox.biz"
-          $demo2Error = $failedTests | Select-String "demo2.peoplebox.biz"
-          $demo9Error = $failedTests | Select-String "demo9.peoplebox.biz"
-
-          # Sunucu bazlı mesaj oluştur
           $messages = @()
-          if ($demoError) { $messages += "🚨 DO SUNUCUSUNU KONTROL EDİN!" }
-          if ($demo2Error) { $messages += "🚨 SH2 SUNUCUSUNU KONTROL EDİN!" }
-          if ($demo9Error) { $messages += "🚨 KNET SUNUCUSUNU KONTROL EDİN!" }
+          if ($failedTests | Select-String "demo.peoplebox.biz") { $messages += "🚨 DO SUNUCUSUNU KONTROL EDİN!" }
+          if ($failedTests | Select-String "demo2.peoplebox.biz") { $messages += "🚨 SH2 SUNUCUSUNU KONTROL EDİN!" }
+          if ($failedTests | Select-String "demo9.peoplebox.biz") { $messages += "🚨 KNET SUNUCUSUNU KONTROL EDİN!" }
 
           if ($messages.Count -gt 0) {
-              $message = ($messages -join "`n") + "`n\n" + ($failedTests -join "`n")
-          } elseif ($failedTests.Count -gt 0) {
-              $message = "🚨 Domainlerde sorun tespit edildi!\n\n" + ($failedTests -join "`n")
+              $message = "⚠️ *Domain Hataları Tespit Edildi!*\n" + ($messages -join "`n")
           } else {
-              $message = "⚠️ Sunucuda yavaşlık!"
+              exit 0  # Eğer hata yoksa mesaj göndermiyoruz
           }
-      
+
           # Mesajı Google Chat'e gönder
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
-      
           Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
         shell: pwsh
