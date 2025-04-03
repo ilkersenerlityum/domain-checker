@@ -47,7 +47,7 @@ jobs:
           npx cypress run --reporter=dot 2>&1 | Tee-Object -FilePath cypress-output.log
           if ($LASTEXITCODE -ne 0) { exit 1 } # Cypress hata verirse job başarısız say
 
-      - name: DEBUG: Cypress Loglarını Göster
+      - name: Cypress Loglarını Göster
         run: cat cypress-output.log
 
       - name: Hatalı Domainleri Google Chat'e Gönder
