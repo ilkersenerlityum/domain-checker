@@ -8,12 +8,12 @@ describe("Domain Content Check", () => {
       errorMessage: "🚨 DO SUNUCUSUNU KONTROL EDİN!",
     },
     {
-      url: "https://demo212321.peoplebox.biz/user/login",
+      url: "https://demo2.peoplebox.biz/user/login",
       selector: "._main_1p1ww_22",
       errorMessage: "🚨 SH2 SUNUCUSUNU KONTROL EDİN!",
     },
     {
-      url: "https://demo912312.peoplebox.biz/user/login",
+      url: "https://demo9.peoplebox.biz/user/login",
       selector: "._main_1p1ww_22",
       errorMessage: "🚨 KNET SUNUCUSUNU KONTROL EDİN!",
     },
