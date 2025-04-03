@@ -46,7 +46,7 @@ jobs:
         run: npx cypress run --reporter=dot | tee cypress-output.log
 
       - name: Hatalı Domainleri Google Chat'e Gönder
-        if: failure()
+        if: always() # **Her durumda çalışsın**
         run: |
           $logPath = "cypress-output.log"
           if (Test-Path $logPath) {
@@ -54,33 +54,37 @@ jobs:
           } else {
               $failedTests = @()
           }
-
+      
+          # Cypress hata bulamadıysa, yine de logları göster
+          Write-Output "🔎 $failedTests İçeriği:"
+          Write-Output ($failedTests -join "`n")
+      
           # Hatalı domainleri belirle
           $messages = @()
           if ($failedTests | Select-String "demo.peoplebox.biz") { $messages += "🚨 DO SUNUCUSUNU KONTROL EDİN!" }
           if ($failedTests | Select-String "demo2.peoplebox.biz") { $messages += "🚨 SH2 SUNUCUSUNU KONTROL EDİN!" }
           if ($failedTests | Select-String "demo9.peoplebox.biz") { $messages += "🚨 KNET SUNUCUSUNU KONTROL EDİN!" }
-
+      
           if ($messages.Count -gt 0) {
               $message = "⚠️ *Domain Hataları Tespit Edildi!*\n\n" + ($messages -join "`n")
           } else {
-              Write-Output "✅ Her şey yolunda, mesaj gönderilmiyor."
-              exit 0  # Eğer hata yoksa mesaj göndermiyoruz
+              $message = "⚠️ Cypress loglarında hata bulunamadı, detayları kontrol edin!"
           }
-
-          # Loglama: Mesaj içeriğini göster
-          Write-Output "📢 Google Chat'e gönderilecek mesaj:"
+      
+          # Logları ekrana yazdır
+          Write-Output "📢 Google Chat Mesajı:"
           Write-Output $message
-
+      
           # Google Chat'e mesaj gönder
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
           $body = @{ text = $message } | ConvertTo-Json -Depth 10 -Compress
           
           try {
               Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
-              Write-Output "✅ Google Chat mesajı gönderildi!"
+              Write-Output "✅ Google Chat mesajı başarıyla gönderildi!"
           } catch {
               Write-Output "❌ Google Chat mesajı gönderilemedi: $_"
               exit 1
           }
         shell: pwsh
+      

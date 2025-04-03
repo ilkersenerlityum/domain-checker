@@ -30,9 +30,11 @@ describe("Domain Content Check", () => {
         if (response.status >= 400) {
           const errorMsg = `🚨 ${domain.url} açılırken hata aldı: ${response.status} → ${domain.errorMessage}`;
           cy.log(errorMsg);
-          failedDomains.push(domain.errorMessage);
+          failedDomains.push(`🌐 ${domain.url} → ${errorMsg}`);
+          console.error(errorMsg); // **Hata kesinlikle loglara düşsün diye**
           throw new Error(errorMsg);
-        } else {
+        }        
+        else {
           cy.visit(domain.url, { failOnStatusCode: false });
           cy.wait(3000);
 
