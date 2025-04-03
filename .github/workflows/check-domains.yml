@@ -43,10 +43,15 @@ jobs:
         run: npx cypress install || echo "Cypress zaten yüklü"
 
       - name: Testleri Çalıştır ve Logları Kaydet
-        run: npx cypress run --reporter=dot | tee cypress-output.log
+        run: |
+          npx cypress run --reporter=dot 2>&1 | Tee-Object -FilePath cypress-output.log
+          if ($LASTEXITCODE -ne 0) { exit 1 } # Cypress hata verirse job başarısız say
+
+      - name: DEBUG: Cypress Loglarını Göster
+        run: cat cypress-output.log
 
       - name: Hatalı Domainleri Google Chat'e Gönder
-        if: failure() # Sadece hata varsa çalıştır
+        if: failure()
         run: |
           $logPath = "cypress-output.log"
           if (Test-Path $logPath) {
@@ -54,27 +59,28 @@ jobs:
           } else {
               $failedTests = @()
           }
-      
+
           # Hatalı domainleri belirle
           $messages = @()
           if ($failedTests | Select-String "demo.peoplebox.biz") { $messages += "🚨 DO SUNUCUSUNU KONTROL EDİN!" }
-          if ($failedTests | Select-String "demo2.peoplebox.biz") { $messages += "🚨 SH2 SUNUCUSUNU KONTROL EDİN!" }
-          if ($failedTests | Select-String "demo9.peoplebox.biz") { $messages += "🚨 KNET SUNUCUSUNU KONTROL EDİN!" }
-      
+          if ($failedTests | Select-String "demo212321.peoplebox.biz") { $messages += "🚨 SH2 SUNUCUSUNU KONTROL EDİN!" }
+          if ($failedTests | Select-String "demo912312.peoplebox.biz") { $messages += "🚨 KNET SUNUCUSUNU KONTROL EDİN!" }
+
+          # Mesaj oluştur
           if ($messages.Count -gt 0) {
               $message = "⚠️ *Domain Hataları Tespit Edildi!*`n" + ($messages -join "`n")
           } else {
               exit 0 # Eğer hata yoksa mesaj göndermeyelim
           }
-      
-          # Logları göster
+
+          # DEBUG: Mesajı göster
           Write-Output "📢 Google Chat'e gönderilecek mesaj:"
           Write-Output $message
-      
+
           # Google Chat'e mesaj gönder
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
-      
+
           try {
               Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
               Write-Output "✅ Google Chat mesajı gönderildi!"
@@ -83,4 +89,3 @@ jobs:
               exit 1
           }
         shell: pwsh
-      
