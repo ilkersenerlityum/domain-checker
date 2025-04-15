@@ -19,17 +19,8 @@ jobs:
           node-version: "18"
           cache: "npm"
 
-      - name: Bağımlılıkları Önbelleğe Al
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            npm-${{ runner.os }}-
-
-      - name: Bağımlılıkları Yükle (Eğer Önbellek Yoksa)
+      - name: Bağımlılıkları Yükle
         run: npm ci
-        if: steps.cache.outputs.cache-hit != 'true'
 
       - name: Cypress Binary Cache Kullan
         uses: actions/cache@v3
@@ -39,13 +30,13 @@ jobs:
           restore-keys: |
             cypress-${{ runner.os }}-
 
-      - name: Cypress Cache Kontrol ve Yükleme
+      - name: Cypress Yükle
         run: npx cypress install || echo "Cypress zaten yüklü"
 
       - name: Testleri Çalıştır ve Logları Kaydet
         run: |
-          npx cypress run --reporter=dot 2>&1 | Tee-Object -FilePath cypress-output.log
-          if ($LASTEXITCODE -ne 0) { exit 1 } # Cypress hata verirse job başarısız say
+          npx cypress run --spec "cypress/e2e/domain-check.cy.js" --reporter=dot 2>&1 | Tee-Object -FilePath cypress-output.log
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Cypress Loglarını Göster
         run: cat cypress-output.log
@@ -54,30 +45,29 @@ jobs:
         if: failure()
         run: |
           $logPath = "cypress-output.log"
+
           if (Test-Path $logPath) {
-              $failedTests = Get-Content $logPath | Select-String "🔥 LOG HATASI" -AllMatches
+              $failedTests = Get-Content $logPath | Select-String "HATA:" -AllMatches
           } else {
-              $failedTests = @()
+              Write-Output "Log dosyası bulunamadı!"
+              exit 0
           }
 
-          # Hatalı domainleri belirle
           $messages = @()
-          if ($failedTests | Select-String "demo.peoplebox.biz") { $messages += "🚨 DO SUNUCUSUNU KONTROL EDİN!" }
-          if ($failedTests | Select-String "demo212321.peoplebox.biz") { $messages += "🚨 SH2 SUNUCUSUNU KONTROL EDİN!" }
-          if ($failedTests | Select-String "demo912312.peoplebox.biz") { $messages += "🚨 KNET SUNUCUSUNU KONTROL EDİN!" }
+          if ($failedTests | Select-String "demo.peoplebox.biz") { $messages += "DO SUNUCUSUNU KONTROL EDİN!" }
+          if ($failedTests | Select-String "demo2.peoplebox.biz") { $messages += "SH2 SUNUCUSUNU KONTROL EDİN!" }
+          if ($failedTests | Select-String "demo9.peoplebox.biz") { $messages += "KNET SUNUCUSUNU KONTROL EDİN!" }
 
-          # Mesaj oluştur
           if ($messages.Count -gt 0) {
-              $message = "⚠️ *Domain Hataları Tespit Edildi!*`n" + ($messages -join "`n")
+              $message = "⚠️ Domain Hataları Tespit Edildi!`n" + ($messages -join "`n")
           } else {
-              exit 0 # Eğer hata yoksa mesaj göndermeyelim
+              Write-Output "Hatalı domain bulunamadı."
+              exit 0
           }
 
-          # DEBUG: Mesajı göster
           Write-Output "📢 Google Chat'e gönderilecek mesaj:"
           Write-Output $message
 
-          # Google Chat'e mesaj gönder
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
 
