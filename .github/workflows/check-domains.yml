@@ -45,32 +45,32 @@ jobs:
         if: failure()
         run: |
           $logPath = "cypress-output.log"
-
+      
           if (Test-Path $logPath) {
               $failedTests = Get-Content $logPath | Select-String "HATA:" -AllMatches
           } else {
               Write-Output "Log dosyası bulunamadı!"
               exit 0
           }
-
+      
           $messages = @()
           if ($failedTests | Select-String "demo.peoplebox.biz") { $messages += "DO SUNUCUSUNU KONTROL EDİN!" }
-          if ($failedTests | Select-String "demo2.peoplebox.biz") { $messages += "SH2 SUNUCUSUNU KONTROL EDİN!" }
-          if ($failedTests | Select-String "demo9.peoplebox.biz") { $messages += "KNET SUNUCUSUNU KONTROL EDİN!" }
-
+          if ($failedTests | Select-String "demo2.peoplebox.biz")   { $messages += "SH2 SUNUCUSUNU KONTROL EDİN!" }
+          if ($failedTests | Select-String "demo9.peoplebox.biz")   { $messages += "KNET SUNUCUSUNU KONTROL EDİN!" }
+      
           if ($messages.Count -gt 0) {
               $message = "⚠️ Domain Hataları Tespit Edildi!`n" + ($messages -join "`n")
           } else {
               Write-Output "Hatalı domain bulunamadı."
               exit 0
           }
-
+      
           Write-Output "📢 Google Chat'e gönderilecek mesaj:"
           Write-Output $message
-
+      
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
-
+      
           try {
               Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
               Write-Output "✅ Google Chat mesajı gönderildi!"
@@ -79,3 +79,4 @@ jobs:
               exit 1
           }
         shell: pwsh
+      
