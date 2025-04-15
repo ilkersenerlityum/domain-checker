@@ -54,9 +54,17 @@ jobs:
           $logContent = Get-Content $logPath -Raw
           $messages = @()
       
-          if ($logContent -match "DO SUNUCUSUNU KONTROL EDİN!") { $messages += "🚨 DO SUNUCUSUNU KONTROL EDİN!" }
-          if ($logContent -match "SH2 SUNUCUSUNU KONTROL EDİN!") { $messages += "🚨 SH2 SUNUCUSUNU KONTROL EDİN!" }
-          if ($logContent -match "KNET SUNUCUSUNU KONTROL EDİN!") { $messages += "🚨 KNET SUNUCUSUNU KONTROL EDİN!" }
+          $patterns = @(
+              "DO SUNUCUSUNU KONTROL EDİN",
+              "SH2 SUNUCUSUNU KONTROL EDİN",
+              "KNET SUNUCUSUNU KONTROL EDİN"
+          )
+      
+          foreach ($pattern in $patterns) {
+              if ($logContent -match $pattern) {
+                  $messages += "🚨 $pattern"
+              }
+          }
       
           if ($messages.Count -eq 0) {
               Write-Output "Hatalı domain bulunamadı."
@@ -79,4 +87,3 @@ jobs:
               exit 1
           }
         shell: pwsh
-      

@@ -27,8 +27,7 @@ describe("Domain Content Check", () => {
       }).then((response) => {
         if (response.status >= 400) {
           const errorMsg = `HATA: ${domain.url} açılırken HTTP ${response.status} hatası → ${domain.errorMessage}`;
-          cy.log(errorMsg);
-          console.log(errorMsg);
+          cy.task("log", errorMsg);
           failedDomains.push(errorMsg);
           throw new Error(errorMsg);
         } else {
@@ -37,12 +36,11 @@ describe("Domain Content Check", () => {
           cy.get("body").then(($body) => {
             if ($body.find(domain.selector).length === 0) {
               const errorMsg = `HATA: ${domain.url} → ${domain.errorMessage}`;
-              cy.log(errorMsg);
-              console.log(errorMsg);
+              cy.task("log", errorMsg);
               failedDomains.push(errorMsg);
               throw new Error(errorMsg);
             } else {
-              cy.log(`OK: ${domain.url} başarılı.`);
+              cy.task("log", `OK: ${domain.url} başarılı.`);
             }
           });
         }
@@ -53,8 +51,7 @@ describe("Domain Content Check", () => {
   after(() => {
     if (failedDomains.length > 0) {
       const finalMsg = `HATA: Tespit edilen domain sorunları:\n${failedDomains.join("\n")}`;
-      cy.log(finalMsg);
-      console.log(finalMsg);
+      cy.task("log", finalMsg);
       throw new Error(finalMsg);
     }
   });
