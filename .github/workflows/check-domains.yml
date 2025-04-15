@@ -34,9 +34,9 @@ jobs:
         run: npx cypress install || echo "Cypress zaten yüklü"
 
       - name: Testleri Çalıştır ve Logları Kaydet
-        run: |
-          npx cypress run --spec "cypress/e2e/request.cy.js" --reporter=dot 2>&1 | Tee-Object -FilePath cypress-output.log
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+        run: npx cypress run | tee cypress-output.log
+        shell: bash
+      
 
       - name: Cypress Loglarını Göster
         run: cat cypress-output.log
