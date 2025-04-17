@@ -26,6 +26,13 @@ jobs:
         run: npx cypress run | tee cypress-output.log
         shell: bash
 
+      - name: Cypress Screenshotları Artifact olarak Yükle
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+
       - name: Hatalı Domainleri Google Chat'e Gönder
         if: failure()
         run: |

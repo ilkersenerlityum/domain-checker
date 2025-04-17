@@ -19,19 +19,17 @@ const domains = [
 describe("Sunucu Sağlık Kontrolü", () => {
   domains.forEach((domain) => {
     it(`Kontrol ediliyor: ${domain.url}`, () => {
-      // HTTP isteği gönder
       cy.request({
         url: domain.url,
-        failOnStatusCode: false, // Hata durumunu elle kontrol edeceğiz
+        failOnStatusCode: false,
+        timeout: 10000, // 10 saniyeye kadar bekletiyorum
       }).then((response) => {
-        // HTTP durumu kontrolü
         if (response.status >= 400) {
           throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
         }
 
-        // Sayfa açılıyor ve içerik kontrolü yapılıyor
-        cy.visit(domain.url);
-        cy.get("body").then(($body) => {
+        cy.visit(domain.url, { timeout: 10000 }); // 10 saniyeye kadar bekletiyorum
+        cy.get("body", { timeout: 10000 }).then(($body) => {
           if ($body.find(domain.selector).length === 0) {
             throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
           }
