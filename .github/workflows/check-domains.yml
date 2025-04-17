@@ -26,7 +26,7 @@ jobs:
         run: npx cypress run | tee cypress-output.log
         shell: bash
 
-      - name: Cypress Screenshotları Artifact olarak Yükle
+      - name: Başarısız Testlerde Ekran Görüntülerini Yükle
         if: failure()
         uses: actions/upload-artifact@v3
         with:
