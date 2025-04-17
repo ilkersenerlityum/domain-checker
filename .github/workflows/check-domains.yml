@@ -13,7 +13,7 @@ jobs:
       - name: Depoyu Kopyala
         uses: actions/checkout@v3
 
-      - name: Node.js Kur
+      - name: Node.js Kur ve Paketleri Yükle
         uses: actions/setup-node@v3
         with:
           node-version: "18"
@@ -22,68 +22,45 @@ jobs:
       - name: Bağımlılıkları Yükle
         run: npm ci
 
-      - name: Cypress Binary Cache Kullan
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/Cypress
-          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            cypress-${{ runner.os }}-
-
-      - name: Cypress Yükle
-        run: npx cypress install || echo "Cypress zaten yüklü"
-
       - name: Testleri Çalıştır ve Logları Kaydet
         run: npx cypress run | tee cypress-output.log
         shell: bash
-      
-
-      - name: Cypress Loglarını Göster
-        run: cat cypress-output.log
 
       - name: Hatalı Domainleri Google Chat'e Gönder
         if: failure()
         run: |
           $logPath = "cypress-output.log"
-      
           if (!(Test-Path $logPath)) {
-              Write-Output "Log dosyası bulunamadı!"
               exit 0
           }
-      
+
           $logContent = Get-Content $logPath -Raw
           $messages = @()
-      
+
           $patterns = @(
               "DO SUNUCUSUNU KONTROL EDİN",
               "SH2 SUNUCUSUNU KONTROL EDİN",
               "KNET SUNUCUSUNU KONTROL EDİN"
           )
-      
+
           foreach ($pattern in $patterns) {
               if ($logContent -match $pattern) {
                   $messages += "🚨 $pattern"
               }
           }
-      
+
           if ($messages.Count -eq 0) {
-              Write-Output "Hatalı domain bulunamadı."
               exit 0
           }
-      
-          $message = "⚠️ *Domain Hataları Tespit Edildi!*`n" + ($messages -join "`n")
-      
-          Write-Output "📢 Google Chat'e gönderilecek mesaj:"
-          Write-Output $message
-      
+
+          $message = "⚠️ **`n" + ($messages -join "`n")
+
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
-      
+
           try {
               Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
-              Write-Output "✅ Google Chat mesajı gönderildi!"
           } catch {
-              Write-Output "❌ Google Chat mesajı gönderilemedi: $_"
               exit 1
           }
         shell: pwsh

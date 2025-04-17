@@ -16,43 +16,27 @@ const domains = [
   },
 ];
 
-let failedDomains = [];
-
-describe("Domain Content Check", () => {
+describe("Sunucu Sağlık Kontrolü", () => {
   domains.forEach((domain) => {
-    it(`Checking ${domain.url}`, () => {
+    it(`Kontrol ediliyor: ${domain.url}`, () => {
+      // HTTP isteği gönder
       cy.request({
         url: domain.url,
-        failOnStatusCode: false,
+        failOnStatusCode: false, // Hata durumunu elle kontrol edeceğiz
       }).then((response) => {
+        // HTTP durumu kontrolü
         if (response.status >= 400) {
-          const errorMsg = `HATA: ${domain.url} açılırken HTTP ${response.status} hatası → ${domain.errorMessage}`;
-          cy.task("logToTerminal", errorMsg);
-          failedDomains.push(errorMsg);
-          throw new Error(errorMsg);
-        } else {
-          cy.visit(domain.url, { failOnStatusCode: false });
-          cy.wait(3000);
-          cy.get("body").then(($body) => {
-            if ($body.find(domain.selector).length === 0) {
-              const errorMsg = `HATA: ${domain.url} → ${domain.errorMessage}`;
-              cy.task("logToTerminal", errorMsg);
-              failedDomains.push(errorMsg);
-              throw new Error(errorMsg);
-            } else {
-              cy.task("logToTerminal", `OK: ${domain.url} başarılı.`);
-            }
-          });
+          throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
         }
+
+        // Sayfa açılıyor ve içerik kontrolü yapılıyor
+        cy.visit(domain.url);
+        cy.get("body").then(($body) => {
+          if ($body.find(domain.selector).length === 0) {
+            throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
+          }
+        });
       });
     });
-  });
-
-  after(() => {
-    if (failedDomains.length > 0) {
-      const finalMsg = `HATA: Tespit edilen domain sorunları:\n${failedDomains.join("\n")}`;
-      cy.task("logToTerminal", finalMsg);
-      throw new Error(finalMsg);
-    }
   });
 });
