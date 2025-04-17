@@ -11,7 +11,7 @@ const domains = [
   },
   {
     url: "https://demo9.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22123123",
+    selector: "._main_1p1ww_22",
     errorMessage: "KNET SUNUCUSUNU KONTROL EDİN!",
   },
 ];
