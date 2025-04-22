@@ -14,6 +14,46 @@ const domains = [
     selector: "._main_1p1ww_22",
     errorMessage: "KNET SUNUCUSUNU KONTROL EDİN!",
   },
+  {
+    url: "https://corendon.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "CORENDON MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://ai.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "Aİ MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://arabamcom.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "ARABAMCOM MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://iga.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "İGA MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://orhanholding.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "ORHANHOLDİNG MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://teleperformance.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "TELEPERFORMANCE MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://shaya.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "SHAYA MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://erisim.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "ERİSİM MÜŞTERİSİNİ KONTROL EDİN!",
+  },
 ];
 
 describe("Sunucu Sağlık Kontrolü", () => {

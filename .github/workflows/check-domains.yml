@@ -38,9 +38,17 @@ jobs:
           $messages = @()
 
           $patterns = @(
-              "DO SUNUCUSUNU KONTROL EDİN",
-              "SH2 SUNUCUSUNU KONTROL EDİN",
-              "KNET SUNUCUSUNU KONTROL EDİN"
+              "DO SUNUCUSUNU KONTROL EDİN!",
+              "SH2 SUNUCUSUNU KONTROL EDİN!",
+              "KNET SUNUCUSUNU KONTROL EDİN!",
+              "CORENDON MÜŞTERİSİNİ KONTROL EDİN!",
+              "Aİ MÜŞTERİSİNİ KONTROL EDİN!",
+              "ARABAMCOM MÜŞTERİSİNİ KONTROL EDİN!",
+              "İGA MÜŞTERİSİNİ KONTROL EDİN!",
+              "ORHANHOLDİNG MÜŞTERİSİNİ KONTROL EDİN!",
+              "TELEPERFORMANCE MÜŞTERİSİNİ KONTROL EDİN!",
+              "SHAYA MÜŞTERİSİNİ KONTROL EDİN!",
+              "ERİSİM MÜŞTERİSİNİ KONTROL EDİN!"
           )
 
           foreach ($pattern in $patterns) {
