@@ -48,7 +48,9 @@ jobs:
               "ORHANHOLDİNG MÜŞTERİSİNİ KONTROL EDİN!",
               "TELEPERFORMANCE MÜŞTERİSİNİ KONTROL EDİN!",
               "SHAYA MÜŞTERİSİNİ KONTROL EDİN!",
-              "ERİSİM MÜŞTERİSİNİ KONTROL EDİN!"
+              "ERİSİM MÜŞTERİSİNİ KONTROL EDİN!",
+              "MAVİ MÜŞTERİSİNİ KONTROL EDİN!",
+              "PENTİ MÜŞTERİSİNİ KONTROL EDİN!"
           )
 
           foreach ($pattern in $patterns) {

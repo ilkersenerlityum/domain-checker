@@ -54,6 +54,16 @@ const domains = [
     selector: "._main_1p1ww_22",
     errorMessage: "ERİSİM MÜŞTERİSİNİ KONTROL EDİN!",
   },
+  {
+    url: "https://mavi.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "MAVİ MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://penti.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "PENTİ MÜŞTERİSİNİ KONTROL EDİN!",
+  },
 ];
 
 describe("Sunucu Sağlık Kontrolü", () => {
