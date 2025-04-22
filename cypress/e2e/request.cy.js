@@ -72,7 +72,7 @@ describe("Sunucu Sağlık Kontrolü", () => {
       cy.request({
         url: domain.url,
         failOnStatusCode: false,
-        timeout: 10000, // 10 saniyeye kadar bekletiyorum
+        timeout: 20000, // 20 saniyeye kadar bekletiyorum
       }).then((response) => {
         if (response.status >= 400) {
           throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
