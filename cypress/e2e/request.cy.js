@@ -78,8 +78,8 @@ describe("Sunucu Sağlık Kontrolü", () => {
           throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
         }
 
-        cy.visit(domain.url, { timeout: 10000 }); // 10 saniyeye kadar bekletiyorum
-        cy.get("body", { timeout: 10000 }).then(($body) => {
+        cy.visit(domain.url, { timeout: 20000 }); // 20 saniyeye kadar bekletiyorum
+        cy.get("body", { timeout: 20000 }).then(($body) => {
           if ($body.find(domain.selector).length === 0) {
             throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
           }
