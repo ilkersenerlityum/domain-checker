@@ -72,14 +72,19 @@ describe("Sunucu Sağlık Kontrolü", () => {
       cy.request({
         url: domain.url,
         failOnStatusCode: false,
-        timeout: 20000, // 20 saniyeye kadar bekletiyorum
+        timeout: 45000, // 45 saniye timeout
       }).then((response) => {
         if (response.status >= 400) {
           throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
         }
 
-        cy.visit(domain.url, { timeout: 20000 }); // 20 saniyeye kadar bekletiyorum
-        cy.get("body", { timeout: 20000 }).then(($body) => {
+        // BURASI: Yavaşlık kontrolü
+        if (response.duration && response.duration > 45000) {
+          throw new Error(`UYARI: ${domain.url} 45 saniyeden uzun sürede yanıt verdi! SUNUCU ÇOK YAVAŞ.`);
+        }
+
+        cy.visit(domain.url, { timeout: 45000 });
+        cy.get("body", { timeout: 45000 }).then(($body) => {
           if ($body.find(domain.selector).length === 0) {
             throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
           }

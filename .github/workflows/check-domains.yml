@@ -26,7 +26,7 @@ jobs:
         run: npx cypress run | tee cypress-output.log
         shell: bash
 
-      - name: Hatalı Domainleri Google Chat'e Gönder
+      - name: Hatalı veya Yavaş Domainleri Google Chat'e Gönder
         if: failure()
         run: |
           $logPath = "cypress-output.log"
@@ -35,35 +35,31 @@ jobs:
           }
 
           $logContent = Get-Content $logPath -Raw
-          $messages = @()
+          $errorMessages = @()
+          $slowMessages = @()
 
-          $patterns = @(
-              "DO SUNUCUSUNU KONTROL EDİN!",
-              "SH2 SUNUCUSUNU KONTROL EDİN!",
-              "KNET SUNUCUSUNU KONTROL EDİN!",
-              "CORENDON MÜŞTERİSİNİ KONTROL EDİN!",
-              "Aİ MÜŞTERİSİNİ KONTROL EDİN!",
-              "ARABAMCOM MÜŞTERİSİNİ KONTROL EDİN!",
-              "İGA MÜŞTERİSİNİ KONTROL EDİN!",
-              "ORHANHOLDİNG MÜŞTERİSİNİ KONTROL EDİN!",
-              "TELEPERFORMANCE MÜŞTERİSİNİ KONTROL EDİN!",
-              "SHAYA MÜŞTERİSİNİ KONTROL EDİN!",
-              "ERİSİM MÜŞTERİSİNİ KONTROL EDİN!",
-              "MAVİ MÜŞTERİSİNİ KONTROL EDİN!",
-              "PENTİ MÜŞTERİSİNİ KONTROL EDİN!"
-          )
-
-          foreach ($pattern in $patterns) {
-              if ($logContent -match $pattern) {
-                  $messages += "🚨 $pattern"
+          # "HATA:" ve "UYARI:" ayrımı yapıyoruz
+          foreach ($line in $logContent -split "`n") {
+              if ($line -match "HATA:") {
+                  $errorMessages += "🟥 $line"
+              } elseif ($line -match "UYARI:") {
+                  $slowMessages += "🟨 $line"
               }
           }
 
-          if ($messages.Count -eq 0) {
+          if ($errorMessages.Count -eq 0 -and $slowMessages.Count -eq 0) {
               exit 0
           }
 
-          $message = "⚠️ **`n" + ($messages -join "`n")
+          $message = "⚠️ **Sunucu Sağlık Kontrolü Sonucu**`n"
+
+          if ($errorMessages.Count -gt 0) {
+              $message += "`n🟥 **Hatalı Sunucular:**`n" + ($errorMessages -join "`n")
+          }
+
+          if ($slowMessages.Count -gt 0) {
+              $message += "`n`n🟨 **Yavaş Sunucular:**`n" + ($slowMessages -join "`n")
+          }
 
           $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
