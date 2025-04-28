@@ -34,11 +34,16 @@ jobs:
               exit 0
           }
 
+          # Log'u oku
           $logContent = Get-Content $logPath -Raw
+
+          # ANSI escape kodlarını temizle
+          $logContent = $logContent -replace "`e\[[\d;]*m", ""
+
           $errorMessages = @()
           $slowMessages = @()
 
-          # "HATA:" ve "UYARI:" ayrımı yapıyoruz
+          # Hataları ve uyarıları ayır
           foreach ($line in $logContent -split "`n") {
               if ($line -match "HATA:") {
                   $errorMessages += "🟥 $line"
@@ -51,6 +56,7 @@ jobs:
               exit 0
           }
 
+          # Mesajı oluştur
           $message = "⚠️ **Sunucu Sağlık Kontrolü Sonucu**`n"
 
           if ($errorMessages.Count -gt 0) {

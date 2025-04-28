@@ -20,12 +20,12 @@ const domains = [
     errorMessage: "CORENDON MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
-    url: "https://aaai.peoplebox.biz/user/login",
+    url: "https://ai.peoplebox.biz/user/login",
     selector: "._main_1p1ww_22",
     errorMessage: "Aİ MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
-    url: "https://aaarabamcom.peoplebox.biz/user/login",
+    url: "https://arabamcom.peoplebox.biz/user/login",
     selector: "._main_1p1ww_22",
     errorMessage: "ARABAMCOM MÜŞTERİSİNİ KONTROL EDİN!",
   },
