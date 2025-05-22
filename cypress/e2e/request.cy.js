@@ -80,7 +80,7 @@ describe("Sunucu Sağlık Kontrolü", () => {
 
         // BURASI: Yavaşlık kontrolü
         if (response.duration && response.duration > 75000) {
-          throw new Error(`UYARI: ${domain.url} 45 saniyeden uzun sürede yanıt verdi! SUNUCU ÇOK YAVAŞ.`);
+          throw new Error(`UYARI: ${domain.url} 75 saniyeden uzun sürede yanıt verdi! SUNUCU ÇOK YAVAŞ.`);
         }
 
         cy.visit(domain.url, { timeout: 75000 });
