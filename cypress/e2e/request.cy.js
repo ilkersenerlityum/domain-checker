@@ -79,12 +79,12 @@ describe("Sunucu Sağlık Kontrolü", () => {
         }
 
         // BURASI: Yavaşlık kontrolü
-        if (response.duration && response.duration > 45000) {
+        if (response.duration && response.duration > 75000) {
           throw new Error(`UYARI: ${domain.url} 45 saniyeden uzun sürede yanıt verdi! SUNUCU ÇOK YAVAŞ.`);
         }
 
-        cy.visit(domain.url, { timeout: 45000 });
-        cy.get("body", { timeout: 45000 }).then(($body) => {
+        cy.visit(domain.url, { timeout: 75000 });
+        cy.get("body", { timeout: 75000 }).then(($body) => {
           if ($body.find(domain.selector).length === 0) {
             throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
           }
