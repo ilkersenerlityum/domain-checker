@@ -1,122 +1,98 @@
 const domains = [
   {
     url: "https://demo.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "DO SUNUCUSUNU KONTROL EDİN!",
   },
   {
     url: "https://demo2.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "SH2 SUNUCUSUNU KONTROL EDİN!",
   },
   {
     url: "https://demo9.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "KNET SUNUCUSUNU KONTROL EDİN!",
   },
   {
     url: "https://corendon.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_2241212321",
     errorMessage: "CORENDON MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://ai.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "Aİ MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://arabamcom.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "ARABAMCOM MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://iga.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "İGA MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://orhanholding.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "ORHANHOLDİNG MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://teleperformance.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "TELEPERFORMANCE MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://shaya.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "SHAYA MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://erisim.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "ERİSİM MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://mavi.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "MAVİ MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://penti.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "PENTİ MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://nbs.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "NBS MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://viennalife.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "VİENNALİFE MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://eae.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "EAE MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://flypgs.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "FLYPGS MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://nobelilac.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "NOBELİLAC MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://marubeni.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "MARUBENİ MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://ozakglobal.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "OZAKGLOBAL MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://acikholding.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "ACİKHOLDİNG MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://sanovel.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "SANOVEL MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://viennalifeakademi.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "VİENNALİFEAKADEMİ MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
     url: "https://anex.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "ANEX MÜŞTERİSİNİ KONTROL EDİN!",
   },
 ];
@@ -127,7 +103,7 @@ describe("Sunucu Sağlık Kontrolü", () => {
       cy.request({
         url: domain.url,
         failOnStatusCode: false,
-        timeout: 50000, // 50 saniye
+        timeout: 50000,
       }).then((response) => {
         if (response.status >= 400) {
           throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
@@ -135,8 +111,8 @@ describe("Sunucu Sağlık Kontrolü", () => {
 
         cy.visit(domain.url, { timeout: 50000 });
         cy.get("body", { timeout: 50000 }).then(($body) => {
-          if ($body.find(domain.selector).length === 0) {
-            throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
+          if ($body.find('button[data-testid="submit button"]').length === 0) {
+            throw new Error(`HATA: ${domain.url} → ${domain.errorMessage} (Buton bulunamadı)`);
           }
         });
       });
