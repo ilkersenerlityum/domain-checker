@@ -2,7 +2,7 @@ name: Check Domains
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "*/1 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -10,36 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Kodu Checkout Et
+      - name: Depoyu Kopyala
         uses: actions/checkout@v3
 
-      - name: Node Kurulumu
+      - name: Node.js Kur ve Paketleri Yükle
         uses: actions/setup-node@v3
         with:
           node-version: "18"
           cache: "npm"
 
-      - name: Paketleri Kur
+      - name: Bağımlılıkları Yükle
         run: npm ci
 
-      - name: Cypress Testini Çalıştır
+      - name: Cypress Testlerini Çalıştır
         run: |
           rm -f failures.json
           npx cypress run || true
 
-      - name: Ekran Görüntülerini Topla ve Bildir
+      - name: Hataları Yorumla ve Google Chat'e Bildir
         if: always()
         run: |
           mkdir -p screenshots_flat
-          find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
 
-          msg="⚠️ **Sunucu Sağlık Kontrolü Sonucu**\n\n"
+          if [ -d "cypress/screenshots" ]; then
+            find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
+          fi
+
           error_block=""
 
           if [ -f "failures.json" ]; then
             while IFS= read -r line; do
               url=$(echo "$line" | jq -r '.url')
-              message=$(echo "$line" | jq -r '.errorMessage')
               img_name=$(echo "$url" | sed 's|https://||;s|/|_|g')
               img_file="screenshots_flat/${img_name}.png"
 
@@ -53,16 +54,13 @@ jobs:
                 link="(Görsel bulunamadı)"
               fi
 
-              error_block+="❌ HATA: ${message}\n🔗 Link: ${url}\n🖼️ Screenshot: ${link}\n\n"
+              error_block+="❌ Hesap: ${url} →\n🖼️ Ekran Görüntüsü: ${link}\n"
             done < <(jq -c '.[]' failures.json)
           fi
 
-          if [ -z "$error_block" ]; then
-            msg+="✅ Hiçbir hata bulunamadı."
-          else
-            msg+="**Hatalı Sunucular:**\n\n${error_block}"
+          if [ -n "$error_block" ]; then
+            msg="⚠️ **PB Sağlık Kontrolü**\n**Hatalı Hesaplar:**\n${error_block}"
+            curl -X POST "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg text "$msg" '{ text: $text }')"
           fi
-
-          curl -X POST "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n --arg text "$msg" '{ text: $text }')"
