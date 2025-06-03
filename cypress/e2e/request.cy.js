@@ -106,11 +106,23 @@ describe("Sunucu Sağlık Kontrolü", () => {
         timeout: 50000,
       }).then((response) => {
         if (response.status >= 400) {
+          cy.task("logFailure", {
+            url: domain.url,
+            errorMessage: domain.errorMessage,
+          });
           expect(response.status, `${domain.errorMessage} (HTTP ${response.status})`).to.be.lessThan(400);
         } else {
           cy.visit(domain.url, { timeout: 50000 });
 
-          cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should('be.visible');
+          cy.get('button[data-testid="submit button"]', { timeout: 30000 })
+            .should('be.visible')
+            .catch((error) => {
+              cy.task("logFailure", {
+                url: domain.url,
+                errorMessage: domain.errorMessage,
+              });
+              throw error;
+            });
         }
       });
     });

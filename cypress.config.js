@@ -1,21 +1,21 @@
 const { defineConfig } = require("cypress");
+const fs = require("fs");
 
 module.exports = defineConfig({
-  e2e: {},
-});
-screenshotOnRunFailure: true
-const fs = require("fs");
-module.exports = {
+  screenshotOnRunFailure: true,
   e2e: {
     setupNodeEvents(on, config) {
       on("task", {
         logFailure({ url, errorMessage }) {
-          const failures = JSON.parse(fs.existsSync("failures.json") ? fs.readFileSync("failures.json") : "[]");
+          const file = "failures.json";
+          const failures = fs.existsSync(file)
+            ? JSON.parse(fs.readFileSync(file))
+            : [];
           failures.push({ url, errorMessage });
-          fs.writeFileSync("failures.json", JSON.stringify(failures, null, 2));
+          fs.writeFileSync(file, JSON.stringify(failures, null, 2));
           return null;
         },
       });
     },
   },
-};
+});
