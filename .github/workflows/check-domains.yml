@@ -38,10 +38,10 @@ jobs:
 
           uploaded_links=()
           for img in screenshots_flat/*.png; do
-            base64_image=$(base64 "$img" | tr -d '\n')
             response=$(curl -s --request POST "https://api.imgur.com/3/image" \
               --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
-              --form "image=$base64_image")
+              --form "image=@$img")
+
             
             link=$(echo "$response" | jq -r '.data.link')
             uploaded_links+=("$link")
