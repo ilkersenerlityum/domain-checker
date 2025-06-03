@@ -36,9 +36,12 @@ describe("Sunucu Sağlık Kontrolü", () => {
         timeout: 30000,
       }).then((response) => {
         if (response.status >= 400) {
-          console.log(`HATA: ${domain.url} || ${screenshotName}`);
-          cy.visit("about:blank");
-          cy.screenshot(screenshotName);
+          // Hata varsa log dosyasına yaz ve ekran görüntüsü al
+          cy.screenshot(screenshotName).then(() => {
+            const logLine = `HATA: ${domain.url} | ${domain.errorMessage} | screenshot: ${screenshotName}.png\n`;
+            cy.writeFile('cypress-output.log', logLine, { flag: 'a+' });
+          });
+
           expect(response.status).to.be.lessThan(400);
         } else {
           cy.visit(domain.url, { timeout: 30000 });
@@ -48,11 +51,3 @@ describe("Sunucu Sağlık Kontrolü", () => {
     });
   });
 });
-
-if (response.status >= 400) {
-  cy.writeFile('cypress-output.log', `HATA: ${domain.url} || ${screenshotName}\n`, { flag: 'a+' });
-  cy.visit("about:blank");
-  cy.screenshot(screenshotName);
-  expect(response.status).to.be.lessThan(400);
-}
-
