@@ -1,7 +1,7 @@
 const domains = [
   {
     url: "https://demo.peoplebox.biz/user/login",
-    selector: ".ık21m1241",
+    selector: "._main_1p1ww_22",
     errorMessage: "DO SUNUCUSUNU KONTROL EDİN!",
   },
   {
@@ -16,7 +16,7 @@ const domains = [
   },
   {
     url: "https://corendon.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
+    selector: "._main_1p1ww_2241212321",
     errorMessage: "CORENDON MÜŞTERİSİNİ KONTROL EDİN!",
   },
   {
@@ -127,19 +127,14 @@ describe("Sunucu Sağlık Kontrolü", () => {
       cy.request({
         url: domain.url,
         failOnStatusCode: false,
-        timeout: 75000, // 75 saniye
+        timeout: 50000, // 50 saniye
       }).then((response) => {
         if (response.status >= 400) {
           throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
         }
 
-        // BURASI: Yavaşlık kontrolü
-        if (response.duration && response.duration > 75000) {
-          throw new Error(`UYARI: ${domain.url} 75 saniyeden uzun sürede yanıt verdi! SUNUCU ÇOK YAVAŞ.`);
-        }
-
-        cy.visit(domain.url, { timeout: 75000 });
-        cy.get("body", { timeout: 75000 }).then(($body) => {
+        cy.visit(domain.url, { timeout: 50000 });
+        cy.get("body", { timeout: 50000 }).then(($body) => {
           if ($body.find(domain.selector).length === 0) {
             throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
           }
