@@ -1,6 +1,6 @@
 const domains = [
   { url: "https://demo.peoplebox.biz/user/login", errorMessage: "DO SUNUCUSUNU KONTROL EDİN!" },
-  { url: "https://demo2.peoplebox.biz/user/login", errorMessage: "SH2 SUNUCUSUNU KONTROL EDİN!" },
+  { url: "https://demo2232.peoplebox.biz/user/login", errorMessage: "SH2 SUNUCUSUNU KONTROL EDİN!" },
   { url: "https://demo91481.peoplebox.biz/user/login", errorMessage: "KNET SUNUCUSUNU KONTROL EDİN!" },
   { url: "https://corendon.peoplebox.biz/user/login", errorMessage: "CORENDON MÜŞTERİSİNİ KONTROL EDİN!" },
   { url: "https://ai.peoplebox.biz/user/login", errorMessage: "Aİ MÜŞTERİSİNİ KONTROL EDİN!" },
