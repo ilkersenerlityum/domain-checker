@@ -111,12 +111,11 @@ describe("Sunucu Sağlık Kontrolü", () => {
 
         cy.visit(domain.url, { timeout: 50000 });
 
-        cy.get('button[data-testid="submit button"]', { timeout: 30000 })
-          .should("exist")
-          .and("be.visible")
-          .catch(() => {
-            throw new Error(`HATA: ${domain.url} → ${domain.errorMessage} (Buton bulunamadı)`);
-          });
+        cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should(($btn) => {
+          if (!$btn.is(':visible')) {
+            throw new Error(`HATA: ${domain.url} → ${domain.errorMessage} (Buton görünmüyor)`);
+          }
+        });
       });
     });
   });
