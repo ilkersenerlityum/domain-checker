@@ -4,17 +4,14 @@ const fs = require("fs");
 module.exports = defineConfig({
   screenshotOnRunFailure: true,
   e2e: {
-    setupNodeEvents(on) {
+    setupNodeEvents(on, config) {
       on("task", {
         logFailure({ url }) {
-          const file = "failures.json";
-          const failures = fs.existsSync(file)
-            ? JSON.parse(fs.readFileSync(file))
+          const failures = fs.existsSync("failures.json")
+            ? JSON.parse(fs.readFileSync("failures.json"))
             : [];
-          if (!failures.find((f) => f.url === url)) {
-            failures.push({ url });
-            fs.writeFileSync(file, JSON.stringify(failures, null, 2));
-          }
+          failures.push({ url });
+          fs.writeFileSync("failures.json", JSON.stringify(failures, null, 2));
           return null;
         },
       });

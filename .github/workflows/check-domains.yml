@@ -1,24 +1,27 @@
 name: Check Domains
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "*/1 * * * *"
-  workflow_dispatch:
 
 jobs:
   check_domains:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Depoyu Klonla
+        uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v3
+      - name: Node Kurulumu
+        uses: actions/setup-node@v3
         with:
           node-version: "18"
 
-      - run: npm ci
+      - name: Paketleri Yükle
+        run: npm ci
 
-      - name: Cypress testlerini çalıştır
+      - name: Cypress Testini Çalıştır
         run: |
           rm -f failures.json
           npx cypress run || true
@@ -27,16 +30,13 @@ jobs:
         if: always()
         run: |
           mkdir -p screenshots_flat
-          if [ -d "cypress/screenshots" ]; then
-            find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
-          fi
+          find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
 
-          if [ -f failures.json ]; then
-            error_block=""
-
+          if [ -f "failures.json" ]; then
+            errors=""
             while IFS= read -r line; do
               url=$(echo "$line" | jq -r '.url')
-              img_name=$(echo "$url" | sed 's|https://||; s|/|_|g')
+              img_name=$(echo "$url" | sed 's|https://||;s|/|_|g')
               img_file="screenshots_flat/${img_name}.png"
 
               if [ -f "$img_file" ]; then
@@ -49,13 +49,13 @@ jobs:
                 imgur_url="(Görsel bulunamadı)"
               fi
 
-              error_block+="❌ Link: $url → \n🖼️ Ekran Görüntüsü: $imgur_url\n\n"
+              errors+="❌ Link: $url → \n🖼️ Ekran Görüntüsü: $imgur_url\n\n"
             done < <(jq -c '.[]' failures.json)
 
-            if [ -n "$error_block" ]; then
-              msg="⚠️ **PB Sağlık Kontrolü**\n\n**Hatalı Hesaplar:**\n\n$error_block"
+            if [ -n "$errors" ]; then
+              message="⚠️ **PB Sağlık Kontrolü**\n\n**Hatalı Hesaplar:**\n\n$errors"
               curl -X POST "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" \
                 -H "Content-Type: application/json" \
-                -d "$(jq -n --arg text "$msg" '{ text: $text }')"
+                -d "$(jq -n --arg text "$message" '{ text: $text }')"
             fi
           fi
