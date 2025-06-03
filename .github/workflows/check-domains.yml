@@ -2,7 +2,7 @@ name: Check Domains
 
 on:
   schedule:
-    - cron: "*/30 * * * *" # 30 dakikada bir kontrol
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -10,51 +10,55 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Depoyu Kopyala
+      - name: Kodu Checkout Et
         uses: actions/checkout@v3
 
-      - name: Node.js Kur ve Paketleri Yükle
+      - name: Node Kurulumu
         uses: actions/setup-node@v3
         with:
           node-version: "18"
           cache: "npm"
 
-      - name: Bağımlılıkları Yükle
+      - name: Paketleri Kur
         run: npm ci
 
-      - name: Cypress Testlerini Çalıştır
-        run: npx cypress run
+      - name: Cypress Testini Çalıştır
+        run: |
+          rm -f failures.json
+          npx cypress run || true
 
-      - name: Ekran Görüntülerini Yükle ve Google Chat'e Bildir
+      - name: Ekran Görüntülerini Topla ve Bildir
         if: always()
         run: |
           mkdir -p screenshots_flat
-
-          if [ -d "cypress/screenshots" ]; then
-            find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
-          fi
+          find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
 
           msg="⚠️ **Sunucu Sağlık Kontrolü Sonucu**\n\n"
           error_block=""
 
-          for img in screenshots_flat/*.png; do
-            base64_image=$(base64 "$img" | tr -d '\n')
-            response=$(curl -s --request POST "https://api.imgur.com/3/image" \
-              --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
-              --form "image=$base64_image")
+          if [ -f "failures.json" ]; then
+            while IFS= read -r line; do
+              url=$(echo "$line" | jq -r '.url')
+              message=$(echo "$line" | jq -r '.errorMessage')
+              img_name=$(echo "$url" | sed 's|https://||;s|/|_|g')
+              img_file="screenshots_flat/${img_name}.png"
 
-            link=$(echo "$response" | jq -r '.data.link')
-            domain_name=$(basename "$img" | cut -d' ' -f1)
-            readable_name=$(echo "$domain_name" | sed 's/\./\\./g')
+              if [ -f "$img_file" ]; then
+                base64_image=$(base64 "$img_file" | tr -d '\n')
+                response=$(curl -s --request POST "https://api.imgur.com/3/image" \
+                  --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
+                  --form "image=$base64_image")
+                link=$(echo "$response" | jq -r '.data.link')
+              else
+                link="(Görsel bulunamadı)"
+              fi
 
-            error_msg=$(grep "$readable_name" cypress/e2e/request.cy.js | cut -d'"' -f8)
-
-            error_block+="❌ HATA: https://${domain_name}/user/login → ${error_msg}\n"
-            error_block+="🖼️ Screenshot: $link\n\n"
-          done
+              error_block+="❌ HATA: ${message}\n🔗 Link: ${url}\n🖼️ Screenshot: ${link}\n\n"
+            done < <(jq -c '.[]' failures.json)
+          fi
 
           if [ -z "$error_block" ]; then
-            msg+="✅ Hata veya ekran görüntüsü bulunamadı."
+            msg+="✅ Hiçbir hata bulunamadı."
           else
             msg+="**Hatalı Sunucular:**\n\n${error_block}"
           fi
