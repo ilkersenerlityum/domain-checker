@@ -2,12 +2,12 @@ name: Check Domains
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/1 * * * *"
   workflow_dispatch:
 
 jobs:
   check_domains:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Depoyu Kopyala
@@ -22,57 +22,36 @@ jobs:
       - name: Bağımlılıkları Yükle
         run: npm ci
 
-      - name: Testleri Çalıştır ve Logları Kaydet
-        run: npx cypress run | tee cypress-output.log
-        shell: bash
+      - name: Testleri Çalıştır
+        run: npx cypress run || true
 
-      - name: Hatalı veya Yavaş Domainleri Google Chat'e Gönder
-        if: failure()
+      - name: Hatalı Domainler İçin Ekran Görüntülerini Yükle ve Google Chat'e Bildir
         run: |
-          $logPath = "cypress-output.log"
-          if (!(Test-Path $logPath)) {
-              exit 0
-          }
+          mkdir -p screenshots_flat
+          find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
 
-          # Log'u oku
-          $logContent = Get-Content $logPath -Raw
+          uploaded_links=()
+          for img in screenshots_flat/*.png; do
+            base64_image=$(base64 "$img" | tr -d '\n')
+            response=$(curl -s --request POST "https://api.imgur.com/3/image" \
+              --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
+              --form "image=$base64_image")
+            
+            link=$(echo "$response" | jq -r '.data.link')
+            uploaded_links+=("$link")
+          done
 
-          # ANSI escape kodlarını temizle
-          $logContent = $logContent -replace "`e\[[\d;]*m", ""
+          msg="⚠️ **Sunucu Sağlık Kontrolü**\n"
 
-          $errorMessages = @()
-          $slowMessages = @()
+          if [ ${#uploaded_links[@]} -gt 0 ]; then
+            msg+="\n🖼️ **Hatalı/Oluşmayan Sayfalar (Screenshot):**\n"
+            for link in "${uploaded_links[@]}"; do
+              msg+="$link\n"
+            done
+          else
+            msg+="\n✅ Hata veya ekran görüntüsü bulunamadı."
+          fi
 
-          # Hataları ve uyarıları ayır
-          foreach ($line in $logContent -split "`n") {
-              if ($line -match "HATA:") {
-                  $errorMessages += "🟥 $line"
-              } elseif ($line -match "UYARI:") {
-                  $slowMessages += "🟨 $line"
-              }
-          }
-
-          if ($errorMessages.Count -eq 0 -and $slowMessages.Count -eq 0) {
-              exit 0
-          }
-
-          # Mesajı oluştur
-          $message = "⚠️ **Sunucu Sağlık Kontrolü Sonucu**`n"
-
-          if ($errorMessages.Count -gt 0) {
-              $message += "`n🟥 **Hatalı Sunucular:**`n" + ($errorMessages -join "`n")
-          }
-
-          if ($slowMessages.Count -gt 0) {
-              $message += "`n`n🟨 **Yavaş Sunucular:**`n" + ($slowMessages -join "`n")
-          }
-
-          $uri = "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}"
-          $body = @{ text = $message } | ConvertTo-Json -Depth 10
-
-          try {
-              Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
-          } catch {
-              exit 1
-          }
-        shell: pwsh
+          curl -X POST "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg text "$msg" '{ text: $text }')"

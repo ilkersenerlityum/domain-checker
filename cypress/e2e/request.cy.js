@@ -64,6 +64,61 @@ const domains = [
     selector: "._main_1p1ww_22",
     errorMessage: "PENTİ MÜŞTERİSİNİ KONTROL EDİN!",
   },
+  {
+    url: "https://nbs.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "NBS MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://viennalife.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "VİENNALİFE MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://eae.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "EAE MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://flypgs.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "FLYPGS MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://nobelilac.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "NOBELİLAC MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://marubeni.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "MARUBENİ MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://ozakglobal.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "OZAKGLOBAL MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://acikholding.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "ACİKHOLDİNG MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://sanovel.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "SANOVEL MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://viennalifeakademi.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "VİENNALİFEAKADEMİ MÜŞTERİSİNİ KONTROL EDİN!",
+  },
+  {
+    url: "https://anex.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "ANEX MÜŞTERİSİNİ KONTROL EDİN!",
+  },
 ];
 
 describe("Sunucu Sağlık Kontrolü", () => {
