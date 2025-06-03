@@ -28,7 +28,13 @@ jobs:
       - name: Hatalı Domainler İçin Ekran Görüntülerini Yükle ve Google Chat'e Bildir
         run: |
           mkdir -p screenshots_flat
-          find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
+
+          if [ -d "cypress/screenshots" ]; then
+            find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
+          else
+            echo "📂 'cypress/screenshots' klasörü yok, screenshot bulunamadı."
+          fi
+
 
           uploaded_links=()
           for img in screenshots_flat/*.png; do
