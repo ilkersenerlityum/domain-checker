@@ -106,16 +106,13 @@ describe("Sunucu Sağlık Kontrolü", () => {
         timeout: 50000,
       }).then((response) => {
         if (response.status >= 400) {
-          throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
+          expect(response.status, `${domain.errorMessage} (HTTP ${response.status})`).to.be.lessThan(400);
+        } else {
+          cy.visit(domain.url, { timeout: 50000 });
+
+          // Giriş butonunu kontrol et
+          cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should('be.visible');
         }
-
-        cy.visit(domain.url, { timeout: 50000 });
-
-        cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should(($btn) => {
-          if (!$btn.is(':visible')) {
-            throw new Error(`HATA: ${domain.url} → ${domain.errorMessage} (Buton görünmüyor)`);
-          }
-        });
       });
     });
   });
