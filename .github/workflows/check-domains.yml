@@ -35,20 +35,20 @@ jobs:
           if [ -f "failures.json" ] && [ "$(jq length failures.json)" -gt 0 ]; then
             errors=""
 
-            jq -c '.[]' failures.json | while read -r line; do
-              url=$(echo "$line" | jq -r '.url')
-              img_name=$(echo "$url" | sed 's|https://||;s|/|_|g')
-              img_file="cypress/screenshots/${img_name}.png"
+          jq -c '.[]' failures.json | while read -r line; do
+            url=$(echo "$line" | jq -r '.url')
+            img_name=$(echo "$url" | sed 's|https://||;s|/|_|g')
+            img_file="cypress/screenshots/${img_name}.png"
 
-              if [ -f "$img_file" ]; then
-                base64_image=$(base64 -w 0 "$img_file")
-                response=$(curl -s --request POST "https://api.imgur.com/3/image" \
-                  --header "Authorization: Client-ID $IMGUR_CLIENT_ID" \
-                  --form "image=$base64_image")
-                imgur_url=$(echo "$response" | jq -r '.data.link')
-              else
-                imgur_url="Ekran görüntüsü bulunamadı"
-              fi
+          if [ -f "$img_file" ]; then
+            base64_image=$(base64 -w 0 "$img_file")
+            response=$(curl -s --request POST "https://api.imgur.com/3/image" \
+              --header "Authorization: Client-ID $IMGUR_CLIENT_ID" \
+              --form "image=$base64_image")
+              imgur_url=$(echo "$response" | jq -r '.data.link')
+            else
+              imgur_url="Ekran görüntüsü bulunamadı"
+            fi
 
               errors+="❌ Link: $url → \n🖼️ Ekran Görüntüsü: $imgur_url\n\n"
             done
@@ -58,6 +58,4 @@ jobs:
             curl -X POST "$GOOGLE_CHAT_WEBHOOK_URL" \
               -H "Content-Type: application/json" \
               -d "$(jq -n --arg text "$message" '{ text: $text }')"
-          else
-            echo "Hata yok, mesaj gönderilmiyor."
           fi
