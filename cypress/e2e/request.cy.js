@@ -1,7 +1,7 @@
 const domains = [
   {
     url: "https://demo.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
+    selector: ".ık21m1241",
     errorMessage: "DO SUNUCUSUNU KONTROL EDİN!",
   },
   {
