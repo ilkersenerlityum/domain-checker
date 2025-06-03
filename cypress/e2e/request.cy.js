@@ -100,6 +100,31 @@ const domains = [
 describe("Sunucu Sağlık Kontrolü", () => {
   domains.forEach((domain) => {
     it(`Kontrol ediliyor: ${domain.url}`, () => {
+      cy.request({
+        url: domain.url,
+        failOnStatusCode: false,
+        timeout: 30000,
+      }).then((response) => {
+        if (response.status >= 400) {
+          // Hata loglama
+          cy.task("logFailure", { url: domain.url });
+          // Ekran görüntüsü için direkt boş sayfa aç ve çek
+          cy.visit("about:blank");
+          cy.screenshot(domain.url.replace(/https?:\/\//, "").replace(/\//g, "_"));
+          expect(response.status).to.be.lessThan(400);
+        } else {
+          // Başarılı sayfada buton kontrolü
+          cy.visit(domain.url, { timeout: 30000 });
+          cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should("be.visible");
+        }
+      });
+    });
+  });
+});
+
+describe("Sunucu Sağlık Kontrolü", () => {
+  domains.forEach((domain) => {
+    it(`Kontrol ediliyor: ${domain.url}`, () => {
       cy.visit(domain.url, { timeout: 50000 });
 
       cy.get('button[data-testid="submit button"]', { timeout: 30000 })
