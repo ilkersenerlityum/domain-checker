@@ -24,38 +24,41 @@ jobs:
       - name: Cypress Testlerini Çalıştır
         run: npx cypress run || true
 
-      - name: Hatalı Domainleri Google Chat'e Gönder
-        run: |
-          $log = "cypress-output.log"
-          if (!(Test-Path $log)) { exit 0 }
+      - name: Google Chat'e Hataları Gönder (Ekran Görüntülü)
+  shell: pwsh
+  run: |
+    $logPath = "cypress-output.log"
+    if (!(Test-Path $logPath)) { exit 0 }
 
-          $errors = @()
+    $hatalar = @()
 
-          foreach ($line in Get-Content $log) {
-          if ($line -match "HATA:") {
-          $url = $line -replace ".*HATA: ", ""
+    foreach ($line in Get-Content $logPath) {
+      if ($line -match "HATA:") {
+        $url = $line -replace ".*HATA: ", ""
 
-          $imgName = $url -replace "https://", "" -replace "/", "_"
-          $imgPath = "cypress/screenshots/$imgName.png"
+        $imgName = $url -replace "https://", "" -replace "/", "_"
+        $imgPath = "cypress/screenshots/${imgName}.png"
 
-          if (Test-Path $imgPath) {
+        if (Test-Path $imgPath) {
           $imgData = [Convert]::ToBase64String([IO.File]::ReadAllBytes($imgPath))
           $res = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" `
             -Headers @{ Authorization = "Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" } `
             -Method POST -Body @{ image = $imgData } -ContentType "application/x-www-form-urlencoded"
           $imgUrl = $res.data.link
-          } else {
-          $imgUrl = "Görsel bulunamadı"
-          }
+        } else {
+          $imgUrl = "Ekran görüntüsü bulunamadı"
+        }
 
-          $errors += "❌ Link: $url`n🖼️ Ekran Görüntüsü: $imgUrl`n"
-          }
-          }
+        $hatalar += "❌ Link: $url`n🖼️ Ekran Görüntüsü: $imgUrl`n"
+      }
+    }
 
-          if ($errors.Count -eq 0) { exit 0 }
+    if ($hatalar.Count -eq 0) { exit 0 }
 
-          $msg = "⚠️ **PB Sağlık Kontrolü**`n`n**Hatalı Hesaplar:**`n`n" + ($errors -join "`n")
-          $body = @{ text = $msg } | ConvertTo-Json -Depth 10
+    $message = "⚠️ **PB Sağlık Kontrolü**`n`n**Hatalı Hesaplar:**`n`n" + ($hatalar -join "`n")
+    $body = @{ text = $message } | ConvertTo-Json -Depth 10
 
-          Invoke-RestMethod -Uri "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" -Method Post -Body $body -ContentType "application/json"
-        shell: pwsh
+    Invoke-RestMethod -Uri "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" `
+      -Method POST `
+      -Body $body `
+      -ContentType "application/json"
