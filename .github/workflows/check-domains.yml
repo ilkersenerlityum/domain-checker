@@ -25,11 +25,11 @@ jobs:
       - name: Run Cypress tests and capture logs
         run: npx cypress run | tee cypress-output.log
 
-      - name: Hataları Google Chat'e Gönder (Imgur ile)
+      - name: Hatalı Domainleri Google Chat'e Gönder
         if: always()
         run: |
           if [ ! -f "cypress-output.log" ]; then
-            echo "Log dosyası yok, çıkılıyor."
+            echo "Log dosyası bulunamadı, çıkılıyor."
             exit 0
           fi
 
@@ -40,16 +40,15 @@ jobs:
             if [[ "$line" == HATA:* ]]; then
               has_error=true
               url=$(echo "$line" | cut -d' ' -f2)
-              name=$(echo "$line" | cut -d'|' -f2 | tr -d '| ')
+              name=$(echo "$line" | cut -d'|' -f2 | tr -d ' ')
 
-              img_path="cypress/screenshots/${name}.png"
+              img_file="cypress/screenshots/${name}.png"
 
-              if [ -f "$img_path" ]; then
-                base64_image=$(base64 "$img_path" | tr -d '\n')
+              if [ -f "$img_file" ]; then
+                base64_image=$(base64 "$img_file" | tr -d '\n')
                 response=$(curl -s --request POST "https://api.imgur.com/3/image" \
                   --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
                   --form "image=$base64_image")
-
                 imgur_url=$(echo "$response" | jq -r '.data.link // "Görsel yüklenemedi"')
               else
                 imgur_url="Ekran görüntüsü bulunamadı"
@@ -64,6 +63,6 @@ jobs:
               -H "Content-Type: application/json" \
               -d "$(jq -n --arg text "$message" '{ text: $text }')"
           else
-            echo "Hata bulunamadı, mesaj gönderilmiyor."
+            echo "HATA bulunamadı, mesaj gönderilmiyor."
           fi
         shell: bash
