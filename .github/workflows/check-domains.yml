@@ -29,15 +29,13 @@ jobs:
       - name: Google Chat'e Bildir
         if: always()
         run: |
-          mkdir -p screenshots_flat
-          find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
-
           if [ -f "failures.json" ]; then
             errors=""
             while IFS= read -r line; do
               url=$(echo "$line" | jq -r '.url')
+              errorMessage=$(echo "$line" | jq -r '.errorMessage')
               img_name=$(echo "$url" | sed 's|https://||;s|/|_|g')
-              img_file="screenshots_flat/${img_name}.png"
+              img_file="cypress/screenshots/${img_name}.png"
 
               if [ -f "$img_file" ]; then
                 base64_image=$(base64 "$img_file" | tr -d '\n')
@@ -46,16 +44,17 @@ jobs:
                   --form "image=$base64_image")
                 imgur_url=$(echo "$response" | jq -r '.data.link')
               else
-                imgur_url="(Görsel bulunamadı)"
+                imgur_url="(Ekran görüntüsü bulunamadı)"
               fi
 
-              errors+="❌ Link: $url → \n🖼️ Ekran Görüntüsü: $imgur_url\n\n"
+              errors+="❌ $errorMessage\nLink: $url\n🖼️ Ekran Görüntüsü: $imgur_url\n\n"
             done < <(jq -c '.[]' failures.json)
 
-            if [ -n "$errors" ]; then
-              message="⚠️ **PB Sağlık Kontrolü**\n\n**Hatalı Hesaplar:**\n\n$errors"
-              curl -X POST "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" \
-                -H "Content-Type: application/json" \
-                -d "$(jq -n --arg text "$message" '{ text: $text }')"
-            fi
+            message="⚠️ **PB Sağlık Kontrolü**\n\n**Hatalı Hesaplar:**\n\n$errors"
+
+            curl -X POST "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg text "$message" '{ text: $text }')"
+          else
+            echo "Hata bulunamadı, mesaj gönderilmiyor."
           fi
