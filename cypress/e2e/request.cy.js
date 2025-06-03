@@ -100,31 +100,15 @@ const domains = [
 describe("Sunucu Sağlık Kontrolü", () => {
   domains.forEach((domain) => {
     it(`Kontrol ediliyor: ${domain.url}`, () => {
-      cy.request({
-        url: domain.url,
-        failOnStatusCode: false,
-        timeout: 50000,
-      }).then((response) => {
-        if (response.status >= 400) {
-          cy.task("logFailure", {
-            url: domain.url,
-            errorMessage: domain.errorMessage,
-          });
-          expect(response.status, `${domain.errorMessage} (HTTP ${response.status})`).to.be.lessThan(400);
-        } else {
-          cy.visit(domain.url, { timeout: 50000 });
+      cy.visit(domain.url, { timeout: 50000 });
 
-          cy.get('button[data-testid="submit button"]', { timeout: 30000 })
-            .should('be.visible')
-            .catch((error) => {
-              cy.task("logFailure", {
-                url: domain.url,
-                errorMessage: domain.errorMessage,
-              });
-              throw error;
-            });
-        }
-      });
+      cy.get('button[data-testid="submit button"]', { timeout: 30000 })
+        .should('be.visible')
+        .catch((err) => {
+          cy.screenshot(domain.url.replace(/https?:\/\//, "").replace(/\//g, "_"));
+          cy.task("logFailure", { url: domain.url });
+          throw err;
+        });
     });
   });
 });

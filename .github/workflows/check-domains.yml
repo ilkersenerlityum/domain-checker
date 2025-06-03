@@ -1,44 +1,39 @@
 name: Check Domains
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "*/1 * * * *"
-  workflow_dispatch:
 
 jobs:
   check_domains:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Depoyu Kopyala
+      - name: Depoyu Klonla
         uses: actions/checkout@v3
 
-      - name: Node.js Kur ve Paketleri Yükle
+      - name: Node Kurulumu
         uses: actions/setup-node@v3
         with:
           node-version: "18"
-          cache: "npm"
 
-      - name: Bağımlılıkları Yükle
+      - name: Paketleri Yükle
         run: npm ci
 
-      - name: Cypress Testlerini Çalıştır
+      - name: Cypress Testini Çalıştır
         run: |
           rm -f failures.json
           npx cypress run || true
 
-      - name: Hataları Yorumla ve Google Chat'e Bildir
+      - name: Google Chat'e Bildir
         if: always()
         run: |
           mkdir -p screenshots_flat
-
-          if [ -d "cypress/screenshots" ]; then
-            find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
-          fi
-
-          error_block=""
+          find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
 
           if [ -f "failures.json" ]; then
+            errors=""
             while IFS= read -r line; do
               url=$(echo "$line" | jq -r '.url')
               img_name=$(echo "$url" | sed 's|https://||;s|/|_|g')
@@ -49,18 +44,18 @@ jobs:
                 response=$(curl -s --request POST "https://api.imgur.com/3/image" \
                   --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
                   --form "image=$base64_image")
-                link=$(echo "$response" | jq -r '.data.link')
+                imgur_url=$(echo "$response" | jq -r '.data.link')
               else
-                link="(Görsel bulunamadı)"
+                imgur_url="(Görsel bulunamadı)"
               fi
 
-              error_block+="❌ Hesap: ${url} →\n🖼️ Ekran Görüntüsü: ${link}\n"
+              errors+="❌ Link: $url → \n🖼️ Ekran Görüntüsü: $imgur_url\n\n"
             done < <(jq -c '.[]' failures.json)
-          fi
 
-          if [ -n "$error_block" ]; then
-            msg="⚠️ **PB Sağlık Kontrolü**\n**Hatalı Hesaplar:**\n${error_block}"
-            curl -X POST "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" \
-              -H "Content-Type: application/json" \
-              -d "$(jq -n --arg text "$msg" '{ text: $text }')"
+            if [ -n "$errors" ]; then
+              message="⚠️ **PB Sağlık Kontrolü**\n\n**Hatalı Hesaplar:**\n\n$errors"
+              curl -X POST "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" \
+                -H "Content-Type: application/json" \
+                -d "$(jq -n --arg text "$message" '{ text: $text }')"
+            fi
           fi
