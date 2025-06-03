@@ -1,61 +1,63 @@
 name: Check Domains
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "*/1 * * * *"
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
 
 jobs:
   check_domains:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Depoyu Klonla
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Node Kurulumu
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
+          cache: "npm"
 
-      - name: Paketleri Yükle
+      - name: Install dependencies
         run: npm ci
 
-      - name: Cypress Testini Çalıştır
-        run: |
-          rm -f failures.json
-          npx cypress run || true
+      - name: Run Cypress tests and capture logs
+        run: npx cypress run | tee cypress-output.log
 
-      - name: Google Chat'e Bildir
+      - name: Send failures to Google Chat with screenshot
         if: always()
-        env:
-          IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
-          GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
         run: |
-          if [ -f "failures.json" ] && [ "$(jq length failures.json)" -gt 0 ]; then
-            errors=""
+          if [ ! -f "cypress-output.log" ]; then
+            exit 0
+          fi
 
-          jq -c '.[]' failures.json | while read -r line; do
-            url=$(echo "$line" | jq -r '.url')
-            img_name=$(echo "$url" | sed 's|https://||;s|/|_|g')
-            img_file="cypress/screenshots/${img_name}.png"
+          message="⚠️ **PB Sağlık Kontrolü**\n\n**Hatalı Hesaplar:**\n\n"
 
-          if [ -f "$img_file" ]; then
-            base64_image=$(base64 -w 0 "$img_file")
-            response=$(curl -s --request POST "https://api.imgur.com/3/image" \
-              --header "Authorization: Client-ID $IMGUR_CLIENT_ID" \
-              --form "image=$base64_image")
-              imgur_url=$(echo "$response" | jq -r '.data.link')
-            else
-              imgur_url="Ekran görüntüsü bulunamadı"
+          while IFS= read -r line; do
+            if [[ "$line" == HATA:* ]]; then
+              url=$(echo "$line" | cut -d' ' -f2)
+              name=$(echo "$line" | cut -d'|' -f2 | tr -d '| ')
+
+              img_path="cypress/screenshots/${name}.png"
+              if [ -f "$img_path" ]; then
+                base64_image=$(base64 "$img_path" | tr -d '\n')
+                response=$(curl -s --request POST "https://api.imgur.com/3/image" \
+                  --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
+                  --form "image=$base64_image")
+
+                imgur_url=$(echo "$response" | jq -r '.data.link // "Görsel yüklenemedi"')
+              else
+                imgur_url="Ekran görüntüsü bulunamadı"
+              fi
+
+              message+="❌ Link: $url\n🖼️ Ekran Görüntüsü: $imgur_url\n\n"
             fi
+          done < cypress-output.log
 
-              errors+="❌ Link: $url → \n🖼️ Ekran Görüntüsü: $imgur_url\n\n"
-            done
-
-            message="⚠️ **PB Sağlık Kontrolü**\n\n**Hatalı Hesaplar:**\n\n$errors"
-
-            curl -X POST "$GOOGLE_CHAT_WEBHOOK_URL" \
+          if [[ "$message" == *"Link:"* ]]; then
+            curl -X POST "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" \
               -H "Content-Type: application/json" \
               -d "$(jq -n --arg text "$message" '{ text: $text }')"
           fi
+        shell: bash
