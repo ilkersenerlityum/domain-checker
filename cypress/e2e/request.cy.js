@@ -8,7 +8,7 @@ const domains = [
     errorMessage: "SH2 SUNUCUSUNU KONTROL EDİN!",
   },
   {
-    url: "https://demo9.peoplebox.biz/user/login",
+    url: "https://demo91481.peoplebox.biz/user/login",
     errorMessage: "KNET SUNUCUSUNU KONTROL EDİN!",
   },
   {
@@ -110,11 +110,13 @@ describe("Sunucu Sağlık Kontrolü", () => {
         }
 
         cy.visit(domain.url, { timeout: 50000 });
-        cy.get("body", { timeout: 50000 }).then(($body) => {
-          if ($body.find('button[data-testid="submit button"]').length === 0) {
+
+        cy.get('button[data-testid="submit button"]', { timeout: 30000 })
+          .should("exist")
+          .and("be.visible")
+          .catch(() => {
             throw new Error(`HATA: ${domain.url} → ${domain.errorMessage} (Buton bulunamadı)`);
-          }
-        });
+          });
       });
     });
   });

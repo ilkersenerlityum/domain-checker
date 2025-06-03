@@ -35,27 +35,28 @@ jobs:
             echo "📂 'cypress/screenshots' klasörü yok, screenshot bulunamadı."
           fi
 
+          msg="⚠️ **Sunucu Sağlık Kontrolü Sonucu**\n\n"
+          error_block=""
 
-          uploaded_links=()
           for img in screenshots_flat/*.png; do
+            base64_image=$(base64 "$img" | tr -d '\n')
             response=$(curl -s --request POST "https://api.imgur.com/3/image" \
-              --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
-              --form "image=@$img")
+            --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
+            --form "image=$base64_image")
 
-            
             link=$(echo "$response" | jq -r '.data.link')
-            uploaded_links+=("$link")
+
+            domain_name=$(basename "$img" | cut -d' ' -f1)
+            readable_name=$(echo "$domain_name" | sed 's/\./\\./g')
+
+            error_block+="❌ HATA: https://${domain_name}/user/login → $(grep "$readable_name" request.cy.js | cut -d'"' -f8)\n"
+            error_block+="🖼️ Screenshot: $link\n\n"
           done
 
-          msg="⚠️ **Sunucu Sağlık Kontrolü**\n"
-
-          if [ ${#uploaded_links[@]} -gt 0 ]; then
-            msg+="\n🖼️ **Hatalı/Oluşmayan Sayfalar (Screenshot):**\n"
-            for link in "${uploaded_links[@]}"; do
-              msg+="$link\n"
-            done
+          if [ -z "$error_block" ]; then
+            msg+="✅ Hata veya ekran görüntüsü bulunamadı."
           else
-            msg+="\n✅ Hata veya ekran görüntüsü bulunamadı."
+            msg+="**Hatalı Sunucular:**\n\n${error_block}"
           fi
 
           curl -X POST "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" \
