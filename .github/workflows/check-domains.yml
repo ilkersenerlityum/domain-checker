@@ -2,7 +2,7 @@ name: Check Domains
 
 on:
   schedule:
-    - cron: "*/1 * * * *"
+    - cron: "*/30 * * * *" # 30 dakikada bir kontrol
   workflow_dispatch:
 
 jobs:
@@ -22,17 +22,16 @@ jobs:
       - name: Bağımlılıkları Yükle
         run: npm ci
 
-      - name: Testleri Çalıştır
-        run: npx cypress run || true
+      - name: Cypress Testlerini Çalıştır
+        run: npx cypress run
 
-      - name: Hatalı Domainler İçin Ekran Görüntülerini Yükle ve Google Chat'e Bildir
+      - name: Ekran Görüntülerini Yükle ve Google Chat'e Bildir
+        if: always()
         run: |
           mkdir -p screenshots_flat
 
           if [ -d "cypress/screenshots" ]; then
             find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
-          else
-            echo "📂 'cypress/screenshots' klasörü yok, screenshot bulunamadı."
           fi
 
           msg="⚠️ **Sunucu Sağlık Kontrolü Sonucu**\n\n"
@@ -41,15 +40,16 @@ jobs:
           for img in screenshots_flat/*.png; do
             base64_image=$(base64 "$img" | tr -d '\n')
             response=$(curl -s --request POST "https://api.imgur.com/3/image" \
-            --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
-            --form "image=$base64_image")
+              --header "Authorization: Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" \
+              --form "image=$base64_image")
 
             link=$(echo "$response" | jq -r '.data.link')
-
             domain_name=$(basename "$img" | cut -d' ' -f1)
             readable_name=$(echo "$domain_name" | sed 's/\./\\./g')
 
-            error_block+="❌ HATA: https://${domain_name}/user/login → $(grep "$readable_name" request.cy.js | cut -d'"' -f8)\n"
+            error_msg=$(grep "$readable_name" cypress/e2e/request.cy.js | cut -d'"' -f8)
+
+            error_block+="❌ HATA: https://${domain_name}/user/login → ${error_msg}\n"
             error_block+="🖼️ Screenshot: $link\n\n"
           done
 
