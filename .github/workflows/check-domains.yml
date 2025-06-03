@@ -25,6 +25,7 @@ jobs:
         run: npx cypress run || true
 
       - name: Google Chat'e Hataları Gönder (Ekran Görüntülü)
+        shell: pwsh
         run: |
           $logPath = "cypress-output.log"
           if (!(Test-Path $logPath)) { exit 0 }
@@ -60,4 +61,4 @@ jobs:
           Invoke-RestMethod -Uri "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" `
           -Method POST `
           -Body $body `
-           -ContentType "application/json"
+          -ContentType "application/json"
