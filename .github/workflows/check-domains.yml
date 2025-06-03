@@ -21,6 +21,9 @@ jobs:
       - name: Bağımlılıkları Kur
         run: npm ci
 
+      - name: Önceki Logları Temizle
+        run: rm -f cypress-output.log || true
+
       - name: Cypress Testlerini Çalıştır
         run: npx cypress run || true
 
@@ -33,24 +36,24 @@ jobs:
           $hatalar = @()
 
           foreach ($line in Get-Content $logPath) {
-          if ($line -match "HATA:") {
-          $url = $line -replace ".*HATA: ", ""
+            if ($line -match "HATA:") {
+              $url = $line -replace ".*HATA: ", ""
 
-          $imgName = $url -replace "https://", "" -replace "/", "_"
-          $imgPath = "cypress/screenshots/${imgName}.png"
+              $imgName = $url -replace "https://", "" -replace "/", "_"
+              $imgPath = "cypress/screenshots/${imgName}.png"
 
-          if (Test-Path $imgPath) {
-          $imgData = [Convert]::ToBase64String([IO.File]::ReadAllBytes($imgPath))
-          $res = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" `
-            -Headers @{ Authorization = "Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" } `
-            -Method POST -Body @{ image = $imgData } -ContentType "application/x-www-form-urlencoded"
-          $imgUrl = $res.data.link
-          } else {
-          $imgUrl = "Ekran görüntüsü bulunamadı"
-          }
+              if (Test-Path $imgPath) {
+                $imgData = [Convert]::ToBase64String([IO.File]::ReadAllBytes($imgPath))
+                $res = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" `
+                  -Headers @{ Authorization = "Client-ID ${{ secrets.IMGUR_CLIENT_ID }}" } `
+                  -Method POST -Body @{ image = $imgData } -ContentType "application/x-www-form-urlencoded"
+                $imgUrl = $res.data.link
+              } else {
+                $imgUrl = "Ekran görüntüsü bulunamadı"
+              }
 
-          $hatalar += "❌ Link: $url`n🖼️ Ekran Görüntüsü: $imgUrl`n"
-          }
+              $hatalar += "❌ Link: $url`n🖼️ Ekran Görüntüsü: $imgUrl`n"
+            }
           }
 
           if ($hatalar.Count -eq 0) { exit 0 }
@@ -59,6 +62,6 @@ jobs:
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
 
           Invoke-RestMethod -Uri "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" `
-          -Method POST `
-          -Body $body `
-          -ContentType "application/json"
+            -Method POST `
+            -Body $body `
+            -ContentType "application/json"

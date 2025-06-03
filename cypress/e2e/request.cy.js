@@ -48,3 +48,11 @@ describe("Sunucu Sağlık Kontrolü", () => {
     });
   });
 });
+
+if (response.status >= 400) {
+  cy.writeFile('cypress-output.log', `HATA: ${domain.url} || ${screenshotName}\n`, { flag: 'a+' });
+  cy.visit("about:blank");
+  cy.screenshot(screenshotName);
+  expect(response.status).to.be.lessThan(400);
+}
+
