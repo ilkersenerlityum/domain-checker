@@ -34,14 +34,15 @@ jobs:
           }
 
           $failures = Get-Content $jsonPath | ConvertFrom-Json
-          if ($failures.Count -eq 0) {
-            Write-Host "Hiçbir hata yok, çıkılıyor."
+
+          if (!$failures -or $failures.Count -eq 0) {
+            Write-Host "Hata bulunamadı, çıkılıyor."
             exit 0
           }
 
           $message = "⚠️ **PB Sağlık Kontrolü**`n`n**Hatalar:**`n"
-          foreach ($f in $failures) {
-            $message += "❌ $($f.url) | $($f.errorMessage) | $($f.screenshot)`n"
+          foreach ($failure in $failures) {
+            $message += "❌ $($failure.errorMessage)`n🔗 $($failure.url)`n🖼️ Ekran görüntüsü: $($failure.screenshot)`n`n"
           }
 
           $body = @{ text = $message } | ConvertTo-Json -Depth 10

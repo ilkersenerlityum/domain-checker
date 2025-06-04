@@ -22,7 +22,7 @@ describe("Sunucu Sağlık Kontrolü", () => {
             });
           });
 
-          expect(response.status).to.be.lessThan(400);
+          cy.wrap(response.status).should("be.lessThan", 400); // test burada fail etsin
         } else {
           cy.visit(domain.url, { timeout: 30000 });
           cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should("be.visible");
