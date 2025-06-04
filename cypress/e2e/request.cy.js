@@ -14,15 +14,18 @@ describe("Sunucu Sağlık Kontrolü", () => {
         timeout: 30000,
       }).then((response) => {
         if (response.status >= 400) {
-          cy.screenshot(screenshotName).then(() => {
-            cy.task("logFailure", {
-              url: domain.url,
-              errorMessage: domain.errorMessage,
-              screenshot: `${screenshotName}.png`,
-            });
+          // önce logla
+          cy.task("logFailure", {
+            url: domain.url,
+            errorMessage: domain.errorMessage,
+            screenshot: `${screenshotName}.png`,
           });
 
-          cy.wrap(response.status).should("be.lessThan", 400); // test burada fail etsin
+          // sonra screenshot
+          cy.screenshot(screenshotName);
+
+          // en sonda fail ettir
+          cy.wrap(response.status).should("be.lessThan", 400);
         } else {
           cy.visit(domain.url, { timeout: 30000 });
           cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should("be.visible");
