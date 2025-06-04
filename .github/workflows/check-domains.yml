@@ -42,6 +42,7 @@ jobs:
           }
 
           $logContent = Get-Content $logPath -Raw
+          # ANSI escape kodlarını temizle
           $logContent = $logContent -replace "`e\[[\d;]*m", ""
 
           # Hataları ayıkla
@@ -86,12 +87,13 @@ jobs:
             $urlMatch = $errMsg -match "(https?:\/\/[^\s]+)"
             $url = if ($urlMatch) { $Matches[0] } else { "Bilinmeyen URL" }
 
-            # Ekran görüntüsü dosyasını eşleştir
             # Dosya adı domain URL'sinden türetildiğini varsayıyoruz (örnek)
             $fileNameBase = ($url -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
 
-            # Uygun dosyayı bul (tam eşleşme olmayabilir, bu yüzden globla buluyoruz)
-            $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" | Select-Object -First 1
+            $screenshotPath = $null
+            if (Test-Path $screenshotsDir) {
+              $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" | Select-Object -First 1
+            }
 
             if ($null -ne $screenshotPath) {
               $imgurLink = Upload-ImgurImage $screenshotPath.FullName
