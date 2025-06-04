@@ -81,9 +81,9 @@ jobs:
           # Google Chat mesajını oluştur
           $message = "⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
 
-          foreach ($error in $errorMessages) {
+          foreach ($errMsg in $errorMessages) {
             # Hangi domainde hata varsa onu yakalamaya çalışalım
-            $urlMatch = $error -match "(https?:\/\/[^\s]+)"
+            $urlMatch = $errMsg -match "(https?:\/\/[^\s]+)"
             $url = if ($urlMatch) { $Matches[0] } else { "Bilinmeyen URL" }
 
             # Ekran görüntüsü dosyasını eşleştir
@@ -96,12 +96,12 @@ jobs:
             if ($null -ne $screenshotPath) {
               $imgurLink = Upload-ImgurImage $screenshotPath.FullName
               if ($imgurLink) {
-                $message += "❌ $error`n🔗 $url`n🖼️ Ekran görüntüsü: $imgurLink`n`n"
+                $message += "❌ $errMsg`n🔗 $url`n🖼️ Ekran görüntüsü: $imgurLink`n`n"
               } else {
-                $message += "❌ $error`n🔗 $url`n"
+                $message += "❌ $errMsg`n🔗 $url`n"
               }
             } else {
-              $message += "❌ $error`n🔗 $url`n"
+              $message += "❌ $errMsg`n🔗 $url`n"
             }
           }
 
