@@ -48,7 +48,7 @@ jobs:
           $errorMessages = @()
           foreach ($line in $logContent -split "`n") {
               if ($line -match "HATA:") {
-                  $errorMessages += $line
+                  $errorMessages += $line.Trim()
               }
           }
 
@@ -78,17 +78,17 @@ jobs:
           # Screenshot klasörü yolu (Cypress default)
           $screenshotsDir = "cypress/screenshots/failures"
 
-          # Google Chat mesajını oluştur
+          # Mesajı oluştur
           $message = "⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
+          $allImgurLinks = @()
 
           foreach ($errMsg in $errorMessages) {
-              # "HATA:" den sonra gelen kısmı ayır (link ve açıklama)
+              # Hata mesajını parçala
               $pattern = "HATA:\s*(https?:\/\/[^\s]+)\s*→\s*(.+)"
               if ($errMsg -match $pattern) {
                   $link = $Matches[1]
                   $desc = $Matches[2]
               } else {
-                  # Eğer format farklıysa, tamamını göster
                   $link = "Bilinmeyen Link"
                   $desc = $errMsg
               }
@@ -97,18 +97,26 @@ jobs:
 
               $screenshotPath = $null
               if (Test-Path $screenshotsDir) {
-                $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" | Select-Object -First 1
+                  $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" | Select-Object -First 1
               }
 
               if ($null -ne $screenshotPath) {
                   $imgurLink = Upload-ImgurImage $screenshotPath.FullName
                   if ($imgurLink) {
                       $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: $imgurLink`n`n"
+                      $allImgurLinks += $imgurLink
                   } else {
                       $message += "❌ Link: $link `n → $desc `n"
                   }
               } else {
                   $message += "❌ Link: $link `n → $desc `n"
+              }
+          }
+
+          if ($allImgurLinks.Count -gt 0) {
+              $message += "`n📸 **Tüm Ekran Görüntüleri:**`n"
+              foreach ($imgLink in $allImgurLinks) {
+                  $message += "$imgLink`n"
               }
           }
 
