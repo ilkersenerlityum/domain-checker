@@ -21,37 +21,33 @@ jobs:
       - name: Bağımlılıkları Kur
         run: npm ci
 
-      - name: Önceki Logları Temizle
-        run: rm -f cypress-output.log || true
-
       - name: Cypress Testlerini Çalıştır
         run: npx cypress run || true
 
       - name: Google Chat'e Hataları Gönder
         shell: pwsh
         run: |
-          $logPath = "cypress-output.log"
-          if (!(Test-Path $logPath)) {
-            Write-Host "Hata log dosyası yok, çıkılıyor."
+          $jsonPath = "failures.json"
+          if (!(Test-Path $jsonPath)) {
+            Write-Host "Hata dosyası yok, çıkılıyor."
             exit 0
           }
 
-          $hatalar = Get-Content $logPath | Where-Object { $_ -like "HATA:*" }
-
-          if (!$hatalar -or $hatalar.Count -eq 0) {
-            Write-Host "Hata bulunamadı, çıkılıyor."
+          $failures = Get-Content $jsonPath | ConvertFrom-Json
+          if ($failures.Count -eq 0) {
+            Write-Host "Hiçbir hata yok, çıkılıyor."
             exit 0
           }
 
           $message = "⚠️ **PB Sağlık Kontrolü**`n`n**Hatalar:**`n"
-          foreach ($hata in $hatalar) {
-            $message += "❌ $hata`n"
+          foreach ($f in $failures) {
+            $message += "❌ $($f.url) | $($f.errorMessage) | $($f.screenshot)`n"
           }
 
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
 
           try {
-            $response = Invoke-RestMethod -Uri "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" `
+            Invoke-RestMethod -Uri "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" `
               -Method POST `
               -Body $body `
               -ContentType "application/json"

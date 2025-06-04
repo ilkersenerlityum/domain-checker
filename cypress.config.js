@@ -12,7 +12,6 @@ module.exports = defineConfig({
             failures = JSON.parse(fs.readFileSync("failures.json"));
           }
 
-          // Aynı url varsa ekleme
           if (!failures.find(f => f.url === url)) {
             failures.push({ url, errorMessage, screenshot });
             fs.writeFileSync("failures.json", JSON.stringify(failures, null, 2));
