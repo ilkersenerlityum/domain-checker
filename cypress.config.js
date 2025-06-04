@@ -8,13 +8,15 @@ module.exports = defineConfig({
       on("task", {
         logFailure({ url, errorMessage, screenshot }) {
           let failures = [];
-          if (fs.existsSync("failures.json")) {
-            failures = JSON.parse(fs.readFileSync("failures.json"));
+          const filePath = "failures.json";
+
+          if (fs.existsSync(filePath)) {
+            failures = JSON.parse(fs.readFileSync(filePath));
           }
 
           if (!failures.find(f => f.url === url)) {
             failures.push({ url, errorMessage, screenshot });
-            fs.writeFileSync("failures.json", JSON.stringify(failures, null, 2));
+            fs.writeFileSync(filePath, JSON.stringify(failures, null, 2));
           }
 
           return null;

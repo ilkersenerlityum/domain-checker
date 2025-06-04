@@ -16,18 +16,18 @@ describe("Sunucu Sağlık Kontrolü", () => {
         const status = response.status;
 
         if (status >= 400) {
-          // Önce task çalışsın
+          // Task çağrısı: önce failures.json’a yaz
           cy.task("logFailure", {
             url: domain.url,
             errorMessage: domain.errorMessage,
             screenshot: `${screenshotName}.png`,
-          }).then(() => {
-            // Sonra screenshot alınsın
-            cy.screenshot(screenshotName);
           });
 
-          // En sonda test fail olsun (diğer işlemler önce çalışsın diye)
-          cy.wrap(status, { log: false }).should("be.lessThan", 400);
+          // Screenshot
+          cy.screenshot(screenshotName);
+
+          // Testi sonunda fail ettir
+          expect(status).to.be.lessThan(400);
         } else {
           cy.visit(domain.url, { timeout: 30000 });
           cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should("be.visible");
