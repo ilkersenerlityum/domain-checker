@@ -5,12 +5,11 @@ const domains = [
 
 describe("Sunucu Sağlık Kontrolü", () => {
   before(() => {
-    // Her test başında failures.json'u temizle
     cy.task("clearFailures");
   });
 
   domains.forEach((domain) => {
-    it(`Kontrol ediliyor: ${domain.url}`, () => {
+    it(`${domain.url} kontrol ediliyor`, () => {
       const screenshotName = domain.url.replace(/https?:\/\//, "").replace(/\//g, "_");
 
       cy.request({
@@ -18,19 +17,14 @@ describe("Sunucu Sağlık Kontrolü", () => {
         failOnStatusCode: false,
         timeout: 30000,
       }).then((response) => {
-        const status = response.status;
-
-        if (status >= 400) {
+        if (response.status >= 400) {
+          cy.screenshot(screenshotName);
           cy.task("logFailure", {
             url: domain.url,
             errorMessage: domain.errorMessage,
             screenshot: `${screenshotName}.png`,
           });
-
-          cy.screenshot(screenshotName);
-
-          // Testi sonunda fail ettir
-          expect(status, `${domain.errorMessage}`).to.be.lessThan(400);
+          expect(response.status, domain.errorMessage).to.be.lessThan(400); // Testi fail ettirir ve mesajı gösterir
         } else {
           cy.visit(domain.url, { timeout: 30000 });
           cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should("be.visible");

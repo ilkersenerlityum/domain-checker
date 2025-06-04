@@ -2,7 +2,7 @@ name: Check Domains
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/1 * * * *" # Her 1 dakikada bir
   workflow_dispatch:
 
 jobs:
@@ -24,39 +24,50 @@ jobs:
       - name: Cypress Testlerini Çalıştır
         run: npx cypress run || true
 
-      - name: Google Chat'e Hataları Gönder
-        shell: pwsh
+      - name: Hataları Google Chat'e Gönder
+        env:
+          IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
+          GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
         run: |
-          $jsonPath = "failures.json"
-          if (!(Test-Path $jsonPath)) {
-            Write-Host "Hata dosyası yok, çıkılıyor."
+          if [ ! -f failures.json ]; then
+            echo "Hata dosyası yok, çıkılıyor."
             exit 0
-          }
+          fi
 
-          $failures = Get-Content $jsonPath | ConvertFrom-Json
-
-          if (!$failures -or $failures.Count -eq 0) {
-            Write-Host "Hata bulunamadı, çıkılıyor."
+          FAILURES=$(cat failures.json)
+          COUNT=$(echo "$FAILURES" | jq 'length')
+          if [ "$COUNT" -eq 0 ]; then
+            echo "Hata bulunamadı, çıkılıyor."
             exit 0
-          }
+          fi
 
-          $message = "⚠️ **PB Sağlık Kontrolü**`n`n**Hatalar:**`n"
-          foreach ($failure in $failures) {
-            $message += "❌ $($failure.errorMessage)`n🔗 $($failure.url)`n🖼️ Ekran görüntüsü: $($failure.screenshot)`n`n"
-          }
+          MESSAGE="⚠️ PB Sağlık Kontrolü\nHatalı Hesaplar:\n"
+          for row in $(echo "${FAILURES}" | jq -r '.[] | @base64'); do
+            _jq() {
+              echo ${row} | base64 --decode | jq -r ${1}
+            }
+            LINK="$(_jq '.url')"
+            ERROR="$(_jq '.errorMessage')"
+            SSFILE="$(_jq '.screenshot')"
 
-          $body = @{ text = $message } | ConvertTo-Json -Depth 10
+            # Imgur'a yükle
+            IMG_URL=""
+            if [ -f "cypress/screenshots/cypress/e2e/$SSFILE" ]; then
+              IMG_URL=$(curl -s -H "Authorization: Client-ID $IMGUR_CLIENT_ID" \
+                -F "image=@cypress/screenshots/cypress/e2e/$SSFILE" https://api.imgur.com/3/image | jq -r '.data.link')
+            fi
 
-          try {
-            Invoke-RestMethod -Uri "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" `
-              -Method POST `
-              -Body $body `
-              -ContentType "application/json"
-            Write-Host "Google Chat'e mesaj gönderildi."
-          } catch {
-            Write-Error "Google Chat mesaj gönderimi başarısız: $_"
-            exit 1
-          }
+            MESSAGE+="❌ $ERROR\n🔗 $LINK\n"
+            if [ "$IMG_URL" != "" ] && [ "$IMG_URL" != "null" ]; then
+              MESSAGE+="🖼️ Ekran Görüntüsü: $IMG_URL\n"
+            fi
+            MESSAGE+="\n"
+          done
+
+          # Google Chat'e gönder
+          JSON="{\"text\": \"$MESSAGE\"}"
+          curl -X POST -H "Content-Type: application/json" \
+            -d "$JSON" "$GOOGLE_CHAT_WEBHOOK_URL"
 
       - name: Hata dosyasını temizle
         if: always()
