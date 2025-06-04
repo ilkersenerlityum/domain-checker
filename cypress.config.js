@@ -7,7 +7,6 @@ module.exports = defineConfig({
     setupNodeEvents(on) {
       on("task", {
         logFailure({ url, errorMessage, screenshot }) {
-          console.log("logFailure task triggered:", url); // debug logu
           let failures = [];
           if (fs.existsSync("failures.json")) {
             failures = JSON.parse(fs.readFileSync("failures.json"));
@@ -17,9 +16,10 @@ module.exports = defineConfig({
             failures.push({ url, errorMessage, screenshot });
             fs.writeFileSync("failures.json", JSON.stringify(failures, null, 2));
           }
+
           return null;
-        },
+        }
       });
-    },
-  },
+    }
+  }
 });
