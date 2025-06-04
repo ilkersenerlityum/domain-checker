@@ -19,9 +19,6 @@ jobs:
           node-version: "18"
           cache: "npm"
 
-      - name: Bağımlılıkları Yükle
-        run: npm ci
-
       - name: Testleri Çalıştır ve Logları Kaydet
         run: npx cypress run | tee cypress-output.log
         shell: bash
@@ -94,18 +91,6 @@ jobs:
 
               $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
 
-              if (Test-Path $screenshotsDir) {
-                  $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" -ErrorAction SilentlyContinue | Select-Object -First 1
-                  if ($null -eq $screenshotPath) {
-                      Write-Warning "Ekran görüntüsü bulunamadı: $fileNameBase"
-                  } else {
-                      Write-Host "Ekran görüntüsü bulundu: $($screenshotPath.FullName)"
-                  }
-              } else {
-                  Write-Warning "Screenshot klasörü bulunamadı: $screenshotsDir"
-                  $screenshotPath = $null
-              }
-
               if ($null -ne $screenshotPath) {
                   $imgurLink = Upload-ImgurImage $screenshotPath.FullName
                   if ($imgurLink) {
@@ -120,7 +105,7 @@ jobs:
           }
 
           if ($allImgurLinks.Count -gt 0) {
-              $message += "`n📸 **Tüm Ekran Görüntüleri:**`n"
+              $message += "`n📸 **Ekran Görüntüleri:**`n"
               foreach ($imgLink in $allImgurLinks) {
                   $message += "$imgLink`n"
               }
