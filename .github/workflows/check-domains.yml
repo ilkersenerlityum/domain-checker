@@ -2,7 +2,7 @@ name: Check Domains
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -22,12 +22,11 @@ jobs:
       - name: Bağımlılıkları Yükle
         run: npm ci
 
-      - name: Testleri Çalıştır ve Logları Kaydet
+      - name: Cypress Testlerini Çalıştır
         run: npx cypress run | tee cypress-output.log
-        shell: bash
 
-      - name: Hatalı Domainleri Google Chat'e Gönder (Imgur destekli)
-        if: failure()
+      - name: Hataları İşle ve Google Chat'e Bildir
+        shell: pwsh
         env:
           IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
           GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
@@ -46,7 +45,7 @@ jobs:
           $errorMessages = @()
           foreach ($line in $logContent -split "`n") {
               if ($line -match "HATA:") {
-                  $errorMessages += $line
+                  $errorMessages += $line.Trim()
               }
           }
 
@@ -57,14 +56,19 @@ jobs:
 
           function Upload-ImgurImage($path) {
             $clientId = $env:IMGUR_CLIENT_ID
+            if (-not (Test-Path $path)) {
+              Write-Warning "Dosya bulunamadı: $path"
+              return $null
+            }
+            Write-Host "Imgur'a yükleniyor: $path"
             $fileBytes = [System.IO.File]::ReadAllBytes($path)
             $base64 = [Convert]::ToBase64String($fileBytes)
             $body = @{ image = $base64 } | ConvertTo-Json
-
             $headers = @{ Authorization = "Client-ID $clientId" }
 
             try {
               $response = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" -Method Post -Headers $headers -Body $body -ContentType "application/json"
+              Write-Host "Imgur linki: $($response.data.link)"
               return $response.data.link
             } catch {
               Write-Warning "Imgur upload başarısız: $_"
@@ -73,42 +77,44 @@ jobs:
           }
 
           $screenshotsDir = "cypress/screenshots"
+
           $message = "⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
           $allImgurLinks = @()
 
           foreach ($errMsg in $errorMessages) {
-            $match = $errMsg -match "HATA: (https?://[^\s]+) (→ .+)"
-            if ($match) {
-              $link = $Matches[1]
-              $desc = $Matches[2].Trim()
-            } else {
-              $link = "Bilinmeyen URL"
-              $desc = "Açıklama yok"
-            }
+              $pattern = "HATA:\s*(https?:\/\/[^\s]+)\s*→\s*(.+)"
+              if ($errMsg -match $pattern) {
+                  $link = $Matches[1]
+                  $desc = $Matches[2]
+              } else {
+                  $link = "Bilinmeyen Link"
+                  $desc = $errMsg
+              }
 
-            $fileNameBase = ($link -replace 'https?://|/', '_').Trim('_').ToLower()
-            $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" | Select-Object -First 1
+              $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
 
-            $imgurLink = $null
-            if ($screenshotPath) {
-              $imgurLink = Upload-ImgurImage $screenshotPath.FullName
-            }
+              $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" -ErrorAction SilentlyContinue | Select-Object -First 1
 
-            if ($imgurLink) {
-              $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: $imgurLink`n`n"
-              $allImgurLinks += $imgurLink
-            } elseif ($screenshotPath) {
-              $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü (local): $($screenshotPath.Name)`n`n"
-            } else {
-              $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü bulunamadı`n`n"
-            }
+              if ($null -ne $screenshotPath) {
+                  Write-Host "Ekran görüntüsü bulundu: $($screenshotPath.FullName)"
+                  $imgurLink = Upload-ImgurImage $screenshotPath.FullName
+                  if ($imgurLink) {
+                      $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: $imgurLink`n`n"
+                      $allImgurLinks += $imgurLink
+                  } else {
+                      $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: (yüklenemedi) $link`n`n"
+                  }
+              } else {
+                  Write-Warning "Ekran görüntüsü bulunamadı: $fileNameBase"
+                  $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: (bulunamadı) $link`n`n"
+              }
           }
 
           if ($allImgurLinks.Count -gt 0) {
-            $message += "`n🖼️ **Tüm Ekran Görüntüleri:**`n"
-            foreach ($link in $allImgurLinks) {
-              $message += "$link`n"
-            }
+              $message += "`n📸 **Tüm Ekran Görüntüleri:**`n"
+              foreach ($imgLink in $allImgurLinks) {
+                  $message += "$imgLink`n"
+              }
           }
 
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
@@ -120,4 +126,3 @@ jobs:
             Write-Error "Google Chat mesaj gönderimi başarısız: $_"
             exit 1
           }
-        shell: pwsh
