@@ -34,7 +34,6 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
 
-          # Log dosyası
           $logPath = "cypress-output.log"
           if (!(Test-Path $logPath)) {
               Write-Host "Log dosyası yok, çıkılıyor."
@@ -44,7 +43,6 @@ jobs:
           $logContent = Get-Content $logPath -Raw
           $logContent = $logContent -replace "`e\[[\d;]*m", ""
 
-          # Hataları ayıkla
           $errorMessages = @()
           foreach ($line in $logContent -split "`n") {
               if ($line -match "HATA:") {
@@ -57,17 +55,21 @@ jobs:
               exit 0
           }
 
-          # Imgur upload için gerekli fonksiyon
           function Upload-ImgurImage($path) {
             $clientId = $env:IMGUR_CLIENT_ID
+            if (-not (Test-Path $path)) {
+              Write-Warning "Dosya bulunamadı: $path"
+              return $null
+            }
+            Write-Host "Imgur'a yükleniyor: $path"
             $fileBytes = [System.IO.File]::ReadAllBytes($path)
             $base64 = [Convert]::ToBase64String($fileBytes)
             $body = @{ image = $base64 } | ConvertTo-Json
-
             $headers = @{ Authorization = "Client-ID $clientId" }
 
             try {
               $response = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" -Method Post -Headers $headers -Body $body -ContentType "application/json"
+              Write-Host "Imgur linki: $($response.data.link)"
               return $response.data.link
             } catch {
               Write-Warning "Imgur upload başarısız: $_"
@@ -75,15 +77,12 @@ jobs:
             }
           }
 
-          # Screenshot klasörü yolu (Cypress default)
           $screenshotsDir = "cypress/screenshots/failures"
 
-          # Mesajı oluştur
           $message = "⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
           $allImgurLinks = @()
 
           foreach ($errMsg in $errorMessages) {
-              # Hata mesajını parçala
               $pattern = "HATA:\s*(https?:\/\/[^\s]+)\s*→\s*(.+)"
               if ($errMsg -match $pattern) {
                   $link = $Matches[1]
@@ -95,9 +94,16 @@ jobs:
 
               $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
 
-              $screenshotPath = $null
               if (Test-Path $screenshotsDir) {
-                  $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" | Select-Object -First 1
+                  $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" -ErrorAction SilentlyContinue | Select-Object -First 1
+                  if ($null -eq $screenshotPath) {
+                      Write-Warning "Ekran görüntüsü bulunamadı: $fileNameBase"
+                  } else {
+                      Write-Host "Ekran görüntüsü bulundu: $($screenshotPath.FullName)"
+                  }
+              } else {
+                  Write-Warning "Screenshot klasörü bulunamadı: $screenshotsDir"
+                  $screenshotPath = $null
               }
 
               if ($null -ne $screenshotPath) {
@@ -120,7 +126,6 @@ jobs:
               }
           }
 
-          # Mesajı gönder
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
 
           try {
