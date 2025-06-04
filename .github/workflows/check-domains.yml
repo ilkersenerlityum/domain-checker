@@ -2,73 +2,117 @@ name: Check Domains
 
 on:
   schedule:
-    - cron: "*/1 * * * *" # Her 1 dakikada bir
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
   check_domains:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
-      - name: Checkout repo
+      - name: Depoyu Kopyala
         uses: actions/checkout@v3
 
-      - name: Node Kurulumu
+      - name: Node.js Kur ve Paketleri Yükle
         uses: actions/setup-node@v3
         with:
           node-version: "18"
+          cache: "npm"
 
-      - name: Bağımlılıkları Kur
+      - name: Bağımlılıkları Yükle
         run: npm ci
 
-      - name: Cypress Testlerini Çalıştır
-        run: npx cypress run || true
+      - name: Testleri Çalıştır ve Logları Kaydet
+        run: npx cypress run | tee cypress-output.log
+        shell: bash
 
-      - name: Hataları Google Chat'e Gönder
+      - name: Hatalı Domainleri Google Chat'e Gönder (Imgur destekli)
+        if: failure()
         env:
           IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
           GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
         run: |
-          if [ ! -f failures.json ]; then
-            echo "Hata dosyası yok, çıkılıyor."
-            exit 0
-          fi
+          $ErrorActionPreference = "Stop"
 
-          FAILURES=$(cat failures.json)
-          COUNT=$(echo "$FAILURES" | jq 'length')
-          if [ "$COUNT" -eq 0 ]; then
-            echo "Hata bulunamadı, çıkılıyor."
-            exit 0
-          fi
+          # Log dosyası
+          $logPath = "cypress-output.log"
+          if (!(Test-Path $logPath)) {
+              Write-Host "Log dosyası yok, çıkılıyor."
+              exit 0
+          }
 
-          MESSAGE="⚠️ PB Sağlık Kontrolü\nHatalı Hesaplar:\n"
-          for row in $(echo "${FAILURES}" | jq -r '.[] | @base64'); do
-            _jq() {
-              echo ${row} | base64 --decode | jq -r ${1}
+          $logContent = Get-Content $logPath -Raw
+          $logContent = $logContent -replace "`e\[[\d;]*m", ""
+
+          # Hataları ayıkla
+          $errorMessages = @()
+          foreach ($line in $logContent -split "`n") {
+              if ($line -match "HATA:") {
+                  $errorMessages += $line
+              }
+          }
+
+          if ($errorMessages.Count -eq 0) {
+              Write-Host "Hata bulunamadı, çıkılıyor."
+              exit 0
+          }
+
+          # Imgur upload için gerekli fonksiyon
+          function Upload-ImgurImage($path) {
+            $clientId = $env:IMGUR_CLIENT_ID
+            $fileBytes = [System.IO.File]::ReadAllBytes($path)
+            $base64 = [Convert]::ToBase64String($fileBytes)
+            $body = @{ image = $base64 } | ConvertTo-Json
+
+            $headers = @{ Authorization = "Client-ID $clientId" }
+
+            try {
+              $response = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" -Method Post -Headers $headers -Body $body -ContentType "application/json"
+              return $response.data.link
+            } catch {
+              Write-Warning "Imgur upload başarısız: $_"
+              return $null
             }
-            LINK="$(_jq '.url')"
-            ERROR="$(_jq '.errorMessage')"
-            SSFILE="$(_jq '.screenshot')"
+          }
 
-            # Imgur'a yükle
-            IMG_URL=""
-            if [ -f "cypress/screenshots/cypress/e2e/$SSFILE" ]; then
-              IMG_URL=$(curl -s -H "Authorization: Client-ID $IMGUR_CLIENT_ID" \
-                -F "image=@cypress/screenshots/cypress/e2e/$SSFILE" https://api.imgur.com/3/image | jq -r '.data.link')
-            fi
+          # Screenshot klasörü yolu (Cypress default)
+          $screenshotsDir = "cypress/screenshots/failures"
 
-            MESSAGE+="❌ $ERROR\n🔗 $LINK\n"
-            if [ "$IMG_URL" != "" ] && [ "$IMG_URL" != "null" ]; then
-              MESSAGE+="🖼️ Ekran Görüntüsü: $IMG_URL\n"
-            fi
-            MESSAGE+="\n"
-          done
+          # Google Chat mesajını oluştur
+          $message = "⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
 
-          # Google Chat'e gönder
-          JSON="{\"text\": \"$MESSAGE\"}"
-          curl -X POST -H "Content-Type: application/json" \
-            -d "$JSON" "$GOOGLE_CHAT_WEBHOOK_URL"
+          foreach ($error in $errorMessages) {
+            # Hangi domainde hata varsa onu yakalamaya çalışalım
+            $urlMatch = $error -match "(https?:\/\/[^\s]+)"
+            $url = if ($urlMatch) { $Matches[0] } else { "Bilinmeyen URL" }
 
-      - name: Hata dosyasını temizle
-        if: always()
-        run: rm -f failures.json
+            # Ekran görüntüsü dosyasını eşleştir
+            # Dosya adı domain URL'sinden türetildiğini varsayıyoruz (örnek)
+            $fileNameBase = ($url -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
+
+            # Uygun dosyayı bul (tam eşleşme olmayabilir, bu yüzden globla buluyoruz)
+            $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" | Select-Object -First 1
+
+            if ($null -ne $screenshotPath) {
+              $imgurLink = Upload-ImgurImage $screenshotPath.FullName
+              if ($imgurLink) {
+                $message += "❌ $error`n🔗 $url`n🖼️ Ekran görüntüsü: $imgurLink`n`n"
+              } else {
+                $message += "❌ $error`n🔗 $url`n"
+              }
+            } else {
+              $message += "❌ $error`n🔗 $url`n"
+            }
+          }
+
+          # Mesajı gönder
+          $body = @{ text = $message } | ConvertTo-Json -Depth 10
+
+          try {
+            Invoke-RestMethod -Uri $env:GOOGLE_CHAT_WEBHOOK_URL -Method Post -Body $body -ContentType "application/json"
+            Write-Host "Google Chat'e mesaj gönderildi."
+          } catch {
+            Write-Error "Google Chat mesaj gönderimi başarısız: $_"
+            exit 1
+          }
+        shell: pwsh

@@ -1,35 +1,45 @@
 const domains = [
-  { url: "https://demo.peoplebox.biz/user/login", errorMessage: "DO SUNUCUSUNU KONTROL EDİN!" },
-  { url: "https://demo2232.peoplebox.biz/user/login", errorMessage: "SH2 SUNUCUSUNU KONTROL EDİN!" },
+  {
+    url: "https://demo.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "DO SUNUCUSUNU KONTROL EDİN!",
+  },
+  {
+    url: "https://demo21331.peoplebox.biz/user/login",
+    selector: "._main_1p1ww_22",
+    errorMessage: "SH2 SUNUCUSUNU KONTROL EDİN!",
+  },
 ];
 
 describe("Sunucu Sağlık Kontrolü", () => {
-  before(() => {
-    cy.task("clearFailures");
-  });
-
   domains.forEach((domain) => {
-    it(`${domain.url} kontrol ediliyor`, () => {
-      const screenshotName = domain.url.replace(/https?:\/\//, "").replace(/\//g, "_");
-
+    it(`Kontrol ediliyor: ${domain.url}`, () => {
       cy.request({
         url: domain.url,
         failOnStatusCode: false,
-        timeout: 30000,
+        timeout: 75000,
       }).then((response) => {
         if (response.status >= 400) {
-          cy.screenshot(screenshotName);
-          cy.task("logFailure", {
-            url: domain.url,
-            errorMessage: domain.errorMessage,
-            screenshot: `${screenshotName}.png`,
-          });
-          expect(response.status, domain.errorMessage).to.be.lessThan(400); // Testi fail ettirir ve mesajı gösterir
-        } else {
-          cy.visit(domain.url, { timeout: 30000 });
-          cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should("be.visible");
+          throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
         }
+
+        // Yavaşlık uyarısı kaldırıldı (isteğin üzerine)
+
+        cy.visit(domain.url, { timeout: 75000 });
+        cy.get("body", { timeout: 75000 }).then(($body) => {
+          if ($body.find(domain.selector).length === 0) {
+            throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
+          }
+        });
       });
     });
+  });
+
+  // Her test sonunda hata varsa screenshot al
+  afterEach(function () {
+    if (this.currentTest.state === "failed") {
+      const testTitle = this.currentTest.title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+      cy.screenshot(`failures/${testTitle}`, { capture: "runner" });
+    }
   });
 });
