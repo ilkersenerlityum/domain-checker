@@ -38,7 +38,7 @@ jobs:
 
           $hatalar = Get-Content $logPath | Where-Object { $_ -like "HATA:*" }
 
-          if ($hatalar.Count -eq 0) {
+          if (!$hatalar -or $hatalar.Count -eq 0) {
             Write-Host "Hata bulunamadı, çıkılıyor."
             exit 0
           }
@@ -50,7 +50,13 @@ jobs:
 
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
 
-          Invoke-RestMethod -Uri "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" `
-            -Method POST `
-            -Body $body `
-            -ContentType "application/json"
+          try {
+            $response = Invoke-RestMethod -Uri "${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}" `
+              -Method POST `
+              -Body $body `
+              -ContentType "application/json"
+            Write-Host "Google Chat'e mesaj gönderildi."
+          } catch {
+            Write-Error "Google Chat mesaj gönderimi başarısız: $_"
+            exit 1
+          }
