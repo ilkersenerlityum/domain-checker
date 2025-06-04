@@ -42,7 +42,6 @@ jobs:
           }
 
           $logContent = Get-Content $logPath -Raw
-          # ANSI escape kodlarını temizle
           $logContent = $logContent -replace "`e\[[\d;]*m", ""
 
           # Hataları ayıkla
@@ -83,28 +82,34 @@ jobs:
           $message = "⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
 
           foreach ($errMsg in $errorMessages) {
-            # Hangi domainde hata varsa onu yakalamaya çalışalım
-            $urlMatch = $errMsg -match "(https?:\/\/[^\s]+)"
-            $url = if ($urlMatch) { $Matches[0] } else { "Bilinmeyen URL" }
-
-            # Dosya adı domain URL'sinden türetildiğini varsayıyoruz (örnek)
-            $fileNameBase = ($url -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
-
-            $screenshotPath = $null
-            if (Test-Path $screenshotsDir) {
-              $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" | Select-Object -First 1
-            }
-
-            if ($null -ne $screenshotPath) {
-              $imgurLink = Upload-ImgurImage $screenshotPath.FullName
-              if ($imgurLink) {
-                $message += "❌ $errMsg`n🔗 $url`n🖼️ Ekran görüntüsü: $imgurLink`n`n"
+              # "HATA:" den sonra gelen kısmı ayır (link ve açıklama)
+              $pattern = "HATA:\s*(https?:\/\/[^\s]+)\s*→\s*(.+)"
+              if ($errMsg -match $pattern) {
+                  $link = $Matches[1]
+                  $desc = $Matches[2]
               } else {
-                $message += "❌ $errMsg`n🔗 $url`n"
+                  # Eğer format farklıysa, tamamını göster
+                  $link = "Bilinmeyen Link"
+                  $desc = $errMsg
               }
-            } else {
-              $message += "❌ $errMsg`n🔗 $url`n"
-            }
+
+              $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
+
+              $screenshotPath = $null
+              if (Test-Path $screenshotsDir) {
+                $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" | Select-Object -First 1
+              }
+
+              if ($null -ne $screenshotPath) {
+                  $imgurLink = Upload-ImgurImage $screenshotPath.FullName
+                  if ($imgurLink) {
+                      $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: $imgurLink`n`n"
+                  } else {
+                      $message += "❌ Link: $link `n → $desc `n"
+                  }
+              } else {
+                  $message += "❌ Link: $link `n → $desc `n"
+              }
           }
 
           # Mesajı gönder
