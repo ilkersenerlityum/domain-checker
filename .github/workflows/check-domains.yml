@@ -46,7 +46,7 @@ jobs:
           $errorMessages = @()
           foreach ($line in $logContent -split "`n") {
               if ($line -match "HATA:") {
-                  $errorMessages += $line.Trim()
+                  $errorMessages += $line
               }
           }
 
@@ -57,19 +57,14 @@ jobs:
 
           function Upload-ImgurImage($path) {
             $clientId = $env:IMGUR_CLIENT_ID
-            if (-not (Test-Path $path)) {
-              Write-Warning "Dosya bulunamadı: $path"
-              return $null
-            }
-            Write-Host "Imgur'a yükleniyor: $path"
             $fileBytes = [System.IO.File]::ReadAllBytes($path)
             $base64 = [Convert]::ToBase64String($fileBytes)
             $body = @{ image = $base64 } | ConvertTo-Json
+
             $headers = @{ Authorization = "Client-ID $clientId" }
 
             try {
               $response = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" -Method Post -Headers $headers -Body $body -ContentType "application/json"
-              Write-Host "Imgur linki: $($response.data.link)"
               return $response.data.link
             } catch {
               Write-Warning "Imgur upload başarısız: $_"
@@ -77,53 +72,43 @@ jobs:
             }
           }
 
-          $screenshotsDir = "cypress/screenshots/failures"
-
+          $screenshotsDir = "cypress/screenshots"
           $message = "⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
           $allImgurLinks = @()
 
           foreach ($errMsg in $errorMessages) {
-              $pattern = "HATA:\s*(https?:\/\/[^\s]+)\s*→\s*(.+)"
-              if ($errMsg -match $pattern) {
-                  $link = $Matches[1]
-                  $desc = $Matches[2]
-              } else {
-                  $link = "Bilinmeyen Link"
-                  $desc = $errMsg
-              }
+            $match = $errMsg -match "HATA: (https?://[^\s]+) (→ .+)"
+            if ($match) {
+              $link = $Matches[1]
+              $desc = $Matches[2].Trim()
+            } else {
+              $link = "Bilinmeyen URL"
+              $desc = "Açıklama yok"
+            }
 
-              $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
+            $fileNameBase = ($link -replace 'https?://|/', '_').Trim('_').ToLower()
+            $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" | Select-Object -First 1
 
-              if (Test-Path $screenshotsDir) {
-                  $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" -ErrorAction SilentlyContinue | Select-Object -First 1
-                  if ($null -eq $screenshotPath) {
-                      Write-Warning "Ekran görüntüsü bulunamadı: $fileNameBase"
-                  } else {
-                      Write-Host "Ekran görüntüsü bulundu: $($screenshotPath.FullName)"
-                  }
-              } else {
-                  Write-Warning "Screenshot klasörü bulunamadı: $screenshotsDir"
-                  $screenshotPath = $null
-              }
+            $imgurLink = $null
+            if ($screenshotPath) {
+              $imgurLink = Upload-ImgurImage $screenshotPath.FullName
+            }
 
-              if ($null -ne $screenshotPath) {
-                  $imgurLink = Upload-ImgurImage $screenshotPath.FullName
-                  if ($imgurLink) {
-                      $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: $imgurLink`n`n"
-                      $allImgurLinks += $imgurLink
-                  } else {
-                      $message += "❌ Link: $link `n → $desc `n"
-                  }
-              } else {
-                  $message += "❌ Link: $link `n → $desc `n"
-              }
+            if ($imgurLink) {
+              $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: $imgurLink`n`n"
+              $allImgurLinks += $imgurLink
+            } elseif ($screenshotPath) {
+              $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü (local): $($screenshotPath.Name)`n`n"
+            } else {
+              $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü bulunamadı`n`n"
+            }
           }
 
           if ($allImgurLinks.Count -gt 0) {
-              $message += "`n📸 **Tüm Ekran Görüntüleri:**`n"
-              foreach ($imgLink in $allImgurLinks) {
-                  $message += "$imgLink`n"
-              }
+            $message += "`n🖼️ **Tüm Ekran Görüntüleri:**`n"
+            foreach ($link in $allImgurLinks) {
+              $message += "$link`n"
+            }
           }
 
           $body = @{ text = $message } | ConvertTo-Json -Depth 10
