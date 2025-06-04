@@ -57,3 +57,7 @@ jobs:
             Write-Error "Google Chat mesaj gönderimi başarısız: $_"
             exit 1
           }
+
+      - name: Hata dosyasını temizle
+        if: always()
+        run: rm -f failures.json

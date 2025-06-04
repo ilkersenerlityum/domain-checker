@@ -9,9 +9,13 @@ module.exports = defineConfig({
         logFailure({ url, errorMessage, screenshot }) {
           let failures = [];
           const filePath = "failures.json";
-
-          if (fs.existsSync(filePath)) {
-            failures = JSON.parse(fs.readFileSync(filePath));
+          try {
+            if (fs.existsSync(filePath)) {
+              failures = JSON.parse(fs.readFileSync(filePath));
+            }
+          } catch (err) {
+            // Dosya okuma hatası olursa yeni başlat
+            failures = [];
           }
 
           if (!failures.find(f => f.url === url)) {
@@ -19,6 +23,13 @@ module.exports = defineConfig({
             fs.writeFileSync(filePath, JSON.stringify(failures, null, 2));
           }
 
+          return null;
+        },
+        clearFailures() {
+          const filePath = "failures.json";
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
           return null;
         }
       });
