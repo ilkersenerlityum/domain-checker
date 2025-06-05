@@ -1,6 +1,6 @@
 const domains = [
   {
-    url: "https://demo.peoplebox.biz/user/login",
+    url: "https://demo123.peoplebox.biz/user/login",
     selector: "._main_1p1ww_22",
     errorMessage: "DO SUNUCUSUNU KONTROL EDİN!",
   },
@@ -10,7 +10,7 @@ const domains = [
     errorMessage: "SH2 SUNUCUSUNU KONTROL EDİN!",
   },
   {
-    url: "https://demo9.peoplebox.biz/user/login",
+    url: "https://demo9123.peoplebox.biz/user/login",
     selector: "._main_1p1ww_22",
     errorMessage: "KNET SUNUCUSUNU KONTROL EDİN!",
   },
