@@ -26,11 +26,13 @@ jobs:
         run: npx cypress run | tee cypress-output.log
 
       - name: Hataları İşle ve Google Chat'e Bildir
+        if: always()
         shell: pwsh
         env:
           IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
           GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
         run: |
+
           $ErrorActionPreference = "Stop"
 
           $logPath = "cypress-output.log"
@@ -77,6 +79,7 @@ jobs:
           }
 
           $screenshotsDir = "cypress/screenshots"
+
           $message = "⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
 
           foreach ($errMsg in $errorMessages) {
@@ -92,29 +95,8 @@ jobs:
               $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
 
               $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Filter *.png -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name.ToLower() -like "*$fileNameBase*" } |
-                Select-Object -First 1
+                  Where-Object { $_.Name -like "*$fileNameBase*" } |
+                  Select-Object -First 1
 
               if ($null -ne $screenshotPath) {
-                  Write-Host "Ekran görüntüsü bulundu: $($screenshotPath.FullName)"
-                  $imgurLink = Upload-ImgurImage $screenshotPath.FullName
-                  if ($imgurLink) {
-                      $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: $imgurLink`n`n"
-                  } else {
-                      $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: (yüklenemedi)`n`n"
-                  }
-              } else {
-                  Write-Warning "Ekran görüntüsü bulunamadı: $fileNameBase"
-                  $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: (bulunamadı)`n`n"
-              }
-          }
-
-          $body = @{ text = $message } | ConvertTo-Json -Depth 10
-
-          try {
-            Invoke-RestMethod -Uri $env:GOOGLE_CHAT_WEBHOOK_URL -Method Post -Body $body -ContentType "application/json"
-            Write-Host "Google Chat'e mesaj gönderildi."
-          } catch {
-            Write-Error "Google Chat mesaj gönderimi başarısız: $_"
-            exit 1
-          }
+                  Write-Host "Ekran görüntüsü bulundu
