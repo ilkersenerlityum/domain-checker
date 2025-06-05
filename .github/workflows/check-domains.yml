@@ -23,9 +23,9 @@ jobs:
         run: npm ci
 
       - name: Cypress Testlerini Çalıştır
-        run: npx cypress run || true
+        run: npx cypress run | tee cypress-output.log || true
 
-      - name: Hatalı Domainler İçin Ekran Görüntülerini Yükle ve Google Chat'e Bildir
+      - name: Hatalı Domainleri Tespit Et ve Google Chat'e Bildir
         env:
           IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
           GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
@@ -34,35 +34,37 @@ jobs:
 
           if [ -d "cypress/screenshots" ]; then
             find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
-          else
-            echo "📂 'cypress/screenshots' klasörü yok, screenshot bulunamadı."
           fi
 
-          uploaded_links=()
-          for img in screenshots_flat/*.png; do
-            if [ -f "$img" ]; then
-              response=$(curl -s --request POST "https://api.imgur.com/3/image" \
-                --header "Authorization: Client-ID $IMGUR_CLIENT_ID" \
-                --form "image=@$img")
+          msg="⚠️ **PB Health Check**\n\n🟥 **Hatalı Hesaplar:**\n"
 
-              link=$(echo "$response" | jq -r '.data.link')
-              if [[ $link == http* ]]; then
-                uploaded_links+=("$link")
+          # Hataları log'dan çek
+          while read -r line; do
+            if [[ "$line" == *"HATA:"* ]]; then
+              link=$(echo "$line" | grep -oE 'https?://[^ ]+')
+              desc=$(echo "$line" | sed -E 's/.*→\s*(.*)/\1/')
+
+              # Dosya adına göre eşleşen screenshot bul
+              safe_name=$(echo "$link" | sed -E 's/https?:\/\///; s/[^a-zA-Z0-9]/_/g')
+              file=$(find screenshots_flat -type f -name "*${safe_name}*.png" | head -n 1)
+
+              if [ -f "$file" ]; then
+                response=$(curl -s --request POST "https://api.imgur.com/3/image" \
+                  --header "Authorization: Client-ID $IMGUR_CLIENT_ID" \
+                  --form "image=@$file")
+                imgur_link=$(echo "$response" | jq -r '.data.link')
+              else
+                imgur_link="(ekran görüntüsü bulunamadı)"
               fi
+
+              msg+="❌ Link: $link \n → $desc \n🔗 Ekran Görüntüsü: $imgur_link\n\n"
             fi
-          done
+          done < <(cat cypress-output.log)
 
-          msg="⚠️ **PB Health Check**\n"
-
-          if [ ${#uploaded_links[@]} -gt 0 ]; then
-            msg+="\n🖼️ **Hatalı Sayfalar (Screenshot):**\n"
-            for link in "${uploaded_links[@]}"; do
-              msg+="$link\n"
-            done
+          if [[ "$msg" == *"❌ Link:"* ]]; then
+            curl -X POST "$GOOGLE_CHAT_WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg text "$msg" '{ text: $text }')"
           else
-            msg+="\n✅ Hata veya ekran görüntüsü bulunamadı."
+            echo "Hatalı hesap bulunamadı, mesaj gönderilmeyecek."
           fi
-
-          curl -X POST "$GOOGLE_CHAT_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n --arg text "$msg" '{ text: $text }')"
