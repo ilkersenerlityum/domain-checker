@@ -36,8 +36,7 @@ jobs:
             find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
           fi
 
-          msg="⚠️ **PB Health Check**
-          🟥 **Kontrol Edilmesi Gereken Hesaplar:**\"
+          msg=$'⚠️ PB Health Check\n🟥 Kontrol Edilmesi Gereken Hesaplar\n'
 
           while read -r line; do
             if [[ "$line" == *"HATA:"* ]]; then
@@ -56,14 +55,16 @@ jobs:
                 imgur_link="(ekran görüntüsü bulunamadı)"
               fi
 
-              msg+="❌ Link: $link \n → $desc \n🔗 Ekran Görüntüsü: $imgur_link\n\n"
+              msg+=$'\n❌ Link: '"$link"$'\n → '"$desc"$'\n🔗 Ekran Görüntüsü: '"$imgur_link"$'\n'
             fi
-          done < <(cat cypress-output.log)
+          done < cypress-output.log
 
           if [[ "$msg" == *"❌ Link:"* ]]; then
+            jq -n --arg text "$msg" '{ text: $text }' > message.json
+
             curl -X POST "$GOOGLE_CHAT_WEBHOOK_URL" \
               -H "Content-Type: application/json" \
-              -d "$(jq -n --arg text "$msg" '{ text: $text }')"
+              -d @message.json
           else
             echo "Hatalı hesap bulunamadı, mesaj gönderilmeyecek."
           fi
