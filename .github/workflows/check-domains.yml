@@ -93,9 +93,12 @@ jobs:
                   $desc = $errMsg
               }
 
-              $fileNameBase = ("pb_healt2_" + ($link -replace 'https?:\/\/|\/', '_')).Trim('_').ToLower()
+                $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
 
-              $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" -ErrorAction SilentlyContinue | Select-Object -First 1
+                $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Filter *.png -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Name -like "*$fileNameBase*" } |
+                  Select-Object -First 1
+
 
               if ($null -ne $screenshotPath) {
                   Write-Host "Ekran görüntüsü bulundu: $($screenshotPath.FullName)"
