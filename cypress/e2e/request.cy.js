@@ -38,8 +38,9 @@ describe("Sunucu Sağlık Kontrolü", () => {
   // Her test sonunda hata varsa screenshot al
   afterEach(function () {
     if (this.currentTest.state === "failed") {
-      const testTitle = this.currentTest.title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-      cy.screenshot(`failures/${testTitle}`, { capture: "runner" });
+      const fileName = this.currentTest.title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+      cy.screenshot(`failures/${fileName}`, { capture: "runner" });
     }
   });
+
 });

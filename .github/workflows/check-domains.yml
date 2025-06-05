@@ -91,7 +91,8 @@ jobs:
                   $desc = $errMsg
               }
 
-              $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
+              $fileNameBase = ("kontrol_ediliyor_" + ($link -replace 'https?:\/\/|\/', '_')).Trim('_').ToLower()
+
 
               $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Include "*$fileNameBase*.png" -ErrorAction SilentlyContinue | Select-Object -First 1
 
