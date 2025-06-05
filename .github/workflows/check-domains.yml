@@ -26,11 +26,13 @@ jobs:
         run: npx cypress run | tee cypress-output.log
 
       - name: Hataları İşle ve Google Chat'e Bildir
+        if: always()
         shell: pwsh
-        env:
+        env:  
           IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
           GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
         run: |
+
           $ErrorActionPreference = "Stop"
 
           $logPath = "cypress-output.log"
