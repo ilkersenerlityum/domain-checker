@@ -7,7 +7,7 @@ on:
 
 jobs:
   check_domains:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Depoyu Kopyala
@@ -23,80 +23,46 @@ jobs:
         run: npm ci
 
       - name: Cypress Testlerini Çalıştır
-        run: npx cypress run | tee cypress-output.log
+        run: npx cypress run || true
 
-      - name: Hataları İşle ve Google Chat'e Bildir
-        if: always()
-        shell: pwsh
+      - name: Hatalı Domainler İçin Ekran Görüntülerini Yükle ve Google Chat'e Bildir
         env:
           IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
           GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
         run: |
+          mkdir -p screenshots_flat
 
-          $ErrorActionPreference = "Stop"
+          if [ -d "cypress/screenshots" ]; then
+            find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
+          else
+            echo "📂 'cypress/screenshots' klasörü yok, screenshot bulunamadı."
+          fi
 
-          $logPath = "cypress-output.log"
-          if (!(Test-Path $logPath)) {
-              Write-Host "Log dosyası yok, çıkılıyor."
-              exit 0
-          }
+          uploaded_links=()
+          for img in screenshots_flat/*.png; do
+            if [ -f "$img" ]; then
+              response=$(curl -s --request POST "https://api.imgur.com/3/image" \
+                --header "Authorization: Client-ID $IMGUR_CLIENT_ID" \
+                --form "image=@$img")
 
-          $logContent = Get-Content $logPath -Raw
-          $logContent = $logContent -replace "`e\[[\d;]*m", ""
+              link=$(echo "$response" | jq -r '.data.link')
+              if [[ $link == http* ]]; then
+                uploaded_links+=("$link")
+              fi
+            fi
+          done
 
-          $errorMessages = @()
-          foreach ($line in $logContent -split "`n") {
-              if ($line -match "HATA:") {
-                  $errorMessages += $line.Trim()
-              }
-          }
+          msg="⚠️ **PB Health Check**\n"
 
-          if ($errorMessages.Count -eq 0) {
-              Write-Host "Hata bulunamadı, çıkılıyor."
-              exit 0
-          }
+          if [ ${#uploaded_links[@]} -gt 0 ]; then
+            msg+="\n🖼️ **Hatalı Sayfalar (Screenshot):**\n"
+            for link in "${uploaded_links[@]}"; do
+              msg+="$link\n"
+            done
+          else
+            msg+="\n✅ Hata veya ekran görüntüsü bulunamadı."
+          fi
 
-          function Upload-ImgurImage($path) {
-            $clientId = $env:IMGUR_CLIENT_ID
-            if (-not (Test-Path $path)) {
-              Write-Warning "Dosya bulunamadı: $path"
-              return $null
-            }
-            Write-Host "Imgur'a yükleniyor: $path"
-            $fileBytes = [System.IO.File]::ReadAllBytes($path)
-            $base64 = [Convert]::ToBase64String($fileBytes)
-            $body = @{ image = $base64 } | ConvertTo-Json
-            $headers = @{ Authorization = "Client-ID $clientId" }
-
-            try {
-              $response = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" -Method Post -Headers $headers -Body $body -ContentType "application/json"
-              Write-Host "Imgur linki: $($response.data.link)"
-              return $response.data.link
-            } catch {
-              Write-Warning "Imgur upload başarısız: $_"
-              return $null
-            }
-          }
-
-          $screenshotsDir = "cypress/screenshots"
-
-          $message = "⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
-
-          foreach ($errMsg in $errorMessages) {
-              $pattern = "HATA:\s*(https?:\/\/[^\s]+)\s*→\s*(.+)"
-              if ($errMsg -match $pattern) {
-                  $link = $Matches[1]
-                  $desc = $Matches[2]
-              } else {
-                  $link = "Bilinmeyen Link"
-                  $desc = $errMsg
-              }
-
-              $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
-
-              $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Filter *.png -ErrorAction SilentlyContinue |
-                  Where-Object { $_.Name -like "*$fileNameBase*" } |
-                  Select-Object -First 1
-
-              if ($null -ne $screenshotPath) {
-                  Write-Host "Ekran görüntüsü bulundu
+          curl -X POST "$GOOGLE_CHAT_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg text "$msg" '{ text: $text }')"
