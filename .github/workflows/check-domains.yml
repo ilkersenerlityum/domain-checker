@@ -36,7 +36,8 @@ jobs:
             find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
           fi
 
-          msg="⚠️ **PB Health Check**\n\n🟥 **Hatalı Hesaplar:**\n"
+          msg="⚠️ **PB Health Check**
+          🟥 **Kontrol Edilmesi Gereken Hesaplar:**\"
 
           while read -r line; do
             if [[ "$line" == *"HATA:"* ]]; then
