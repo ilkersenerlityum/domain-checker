@@ -121,39 +121,34 @@
     },
   ];
 
- describe("Sunucu Sağlık Kontrolü", () => {
-  domains.forEach((domain) => {
-    it(`Kontrol ediliyor: ${domain.url}`, () => {
-      cy.request({
-        url: domain.url,
-        failOnStatusCode: false,
-        timeout: 75000,
-      }).then((response) => {
-        if (response.status >= 400) {
-          throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
-        }
+  describe("Sunucu Sağlık Kontrolü", () => {
+    domains.forEach((domain) => {
+      it(`Kontrol ediliyor: ${domain.url}`, () => {
+        cy.request({
+          url: domain.url,
+          failOnStatusCode: false,
+          timeout: 35000,
+        }).then((response) => {
+          if (response.status >= 400) {
+            throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
+          }
 
-        cy.visit(domain.url, { timeout: 75000 });
 
-        cy.get('button[data-testid="submit button"]', { timeout: 30000 })
-          .should('exist')
-          .then(() => {
-          })
-          .catch(() => {
-            cy.get('body', { timeout: 75000 }).then(($body) => {
-              if ($body.find(domain.selector).length === 0) {
-                throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
-              }
-            });
+          cy.visit(domain.url, { timeout: 35000 });
+          cy.get("body", { timeout: 35000 }).then(($body) => {
+            if ($body.find(domain.selector).length === 0) {
+              throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
+            }
           });
+        });
       });
     });
-  });
 
-  afterEach(function () {
-    if (this.currentTest.state === "failed") {
-      const fileName = this.currentTest.title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-      cy.screenshot(`failures/${fileName}`, { capture: "runner" });
-    }
+    afterEach(function () {
+      if (this.currentTest.state === "failed") {
+        const fileName = this.currentTest.title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+        cy.screenshot(`failures/${fileName}`, { capture: "runner" });
+      }
+    });
+
   });
-});
