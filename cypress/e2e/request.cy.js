@@ -1,6 +1,6 @@
 const domains = [
   {
-    url: "https://demo.peoplebox.biz/user/login",
+    url: "https://demo515.peoplebox.biz/user/login",
     selector: "._main_1p1ww_22",
     errorMessage: "DO SUNUCUSUNU KONTROL EDİN!",
   },
