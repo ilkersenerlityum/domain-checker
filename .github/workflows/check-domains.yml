@@ -23,9 +23,9 @@ jobs:
         run: npm ci
 
       - name: Cypress Testlerini Çalıştır
-        run: npx cypress run || true
+        run: npx cypress run | tee cypress-output.log || true
 
-      - name: Hatalı Domainler İçin Ekran Görüntülerini Yükle ve Google Chat'e Bildir
+      - name: Hatalı Domainleri Tespit Et ve Google Chat'e Bildir
         env:
           IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
           GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
@@ -34,31 +34,35 @@ jobs:
 
           if [ -d "cypress/screenshots" ]; then
             find cypress/screenshots -type f -name "*.png" -exec cp {} screenshots_flat/ \;
+          fi
+
+          msg="⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
+
+          while read -r line; do
+            if [[ "$line" == *"HATA:"* ]]; then
+              link=$(echo "$line" | grep -oE 'https?://[^ ]+')
+              desc=$(echo "$line" | sed -E 's/.*→\s*(.*)/\1/')
+
+              safe_name=$(echo "$link" | sed -E 's/https?:\/\///; s/[^a-zA-Z0-9]/_/g')
+              file=$(find screenshots_flat -type f -name "*${safe_name}*.png" | head -n 1)
+
+              if [ -f "$file" ]; then
+                response=$(curl -s --request POST "https://api.imgur.com/3/image" \
+                  --header "Authorization: Client-ID $IMGUR_CLIENT_ID" \
+                  --form "image=@$file")
+                imgur_link=$(echo "$response" | jq -r '.data.link')
+              else
+                imgur_link="(ekran görüntüsü bulunamadı)"
+              fi
+
+              msg+="❌ Link: $link \n → $desc \n🔗 Ekran Görüntüsü: $imgur_link\n\n"
+            fi
+          done < <(cat cypress-output.log)
+
+          if [[ "$msg" == *"❌ Link:"* ]]; then
+            curl -X POST "$GOOGLE_CHAT_WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg text "$msg" '{ text: $text }')"
           else
-            echo "📂 'cypress/screenshots' klasörü yok, screenshot bulunamadı."
+            echo "Hatalı hesap bulunamadı, mesaj gönderilmeyecek."
           fi
-
-          msg=$'⚠️ PB Health Check\n\n🟥 Hatalı Hesaplar:\n'
-
-          uploaded_links=()
-          for img in screenshots_flat/*.png; do
-            response=$(curl -s --request POST "https://api.imgur.com/3/image" \
-              --header "Authorization: Client-ID $IMGUR_CLIENT_ID" \
-              --form "image=@$img")
-
-            link=$(echo "$response" | jq -r '.data.link')
-
-            filename=$(basename "$img")
-            page_url=$(echo "$filename" | sed 's/_/\//g' | sed 's/\.png//g' | sed 's/^/https:\/\//')
-
-            msg+=$'❌ Link: '"$page_url"$'\n → HATA GÖRÜLDÜ\n🔗 Ekran Görüntüsü: '"$link"$'\n\n'
-          done
-
-          if [ ${#uploaded_links[@]} -eq 0 ]; then
-            msg+=$'✅ Hata veya ekran görüntüsü bulunamadı.'
-          fi
-
-          jq -n --arg text "$msg" '{ text: $text }' > message.json
-
-          curl -X POST "$GOOGLE_CHAT_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
