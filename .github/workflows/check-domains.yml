@@ -2,7 +2,7 @@ name: Check Domains
 
 on:
   schedule:
-    - cron: "*/10 * * * *"  # Her 10 dakikada bir çalışır
+    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -23,7 +23,7 @@ jobs:
         run: npm ci
 
       - name: Cypress Testlerini Çalıştır
-        run: npx cypress run || true  # Hatalar olsa bile devam eder
+        run: npx cypress run || true
 
       - name: Hatalı Domainler İçin Ekran Görüntülerini Yükle ve Google Chat'e Bildir
         env:
@@ -38,7 +38,7 @@ jobs:
             echo "📂 'cypress/screenshots' klasörü yok, screenshot bulunamadı."
           fi
 
-          msg="⚠️ PB Health Check\n\n🟥 Hatalı Hesaplar:\n"
+          msg=$'⚠️ PB Health Check\n\n🟥 Hatalı Hesaplar:\n'
 
           uploaded_links=()
           for img in screenshots_flat/*.png; do
@@ -48,21 +48,17 @@ jobs:
 
             link=$(echo "$response" | jq -r '.data.link')
 
-            # Link ismi ve açıklama log'dan çekilemiyorsa sadeleştir
             filename=$(basename "$img")
-            page_url=$(echo "$filename" | sed 's/_/\//g' | sed 's/\.png//g' | sed 's/^/https:\/\//' )
+            page_url=$(echo "$filename" | sed 's/_/\//g' | sed 's/\.png//g' | sed 's/^/https:\/\//')
 
-            msg+="❌ Link: $page_url\n → HATA GÖRÜLDÜ\n🔗 Ekran Görüntüsü: $link\n\n"
+            msg+=$'❌ Link: '"$page_url"$'\n → HATA GÖRÜLDÜ\n🔗 Ekran Görüntüsü: '"$link"$'\n\n'
           done
 
-          # Eğer hiç screenshot yoksa
           if [ ${#uploaded_links[@]} -eq 0 ]; then
-            msg+="✅ Hata veya ekran görüntüsü bulunamadı."
+            msg+=$'✅ Hata veya ekran görüntüsü bulunamadı.'
           fi
 
-          # Mesajı JSON olarak escape etmeden gönder
-          printf '%s\n' "$msg" | jq -Rs --argjson content '{"text": .}' > message.json
+          jq -n --arg text "$msg" '{ text: $text }' > message.json
 
           curl -X POST "$GOOGLE_CHAT_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d @message.json
