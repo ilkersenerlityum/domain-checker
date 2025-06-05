@@ -1,12 +1,10 @@
 const domains = [
   {
     url: "https://demo515.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "DO SUNUCUSUNU KONTROL EDİN!",
   },
   {
     url: "https://demo21331.peoplebox.biz/user/login",
-    selector: "._main_1p1ww_22",
     errorMessage: "SH2 SUNUCUSUNU KONTROL EDİN!",
   },
 ];
@@ -23,24 +21,18 @@ describe("Sunucu Sağlık Kontrolü", () => {
           throw new Error(`HATA: ${domain.url} HTTP ${response.status} → ${domain.errorMessage}`);
         }
 
-        // Yavaşlık uyarısı kaldırıldı (isteğin üzerine)
-
         cy.visit(domain.url, { timeout: 75000 });
-        cy.get("body", { timeout: 75000 }).then(($body) => {
-          if ($body.find(domain.selector).length === 0) {
-            throw new Error(`HATA: ${domain.url} → ${domain.errorMessage}`);
-          }
-        });
+
+        // Sadece butonun varlığını 30 saniyeye kadar bekle
+        cy.get('button[data-testid="submit button"]', { timeout: 30000 }).should('exist');
       });
     });
   });
 
-  // Her test sonunda hata varsa screenshot al
   afterEach(function () {
     if (this.currentTest.state === "failed") {
       const fileName = this.currentTest.title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
       cy.screenshot(`failures/${fileName}`, { capture: "runner" });
     }
   });
-
 });
