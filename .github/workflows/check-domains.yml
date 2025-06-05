@@ -26,13 +26,11 @@ jobs:
         run: npx cypress run | tee cypress-output.log
 
       - name: Hataları İşle ve Google Chat'e Bildir
-        if: always()
         shell: pwsh
-        env:  
+        env:
           IMGUR_CLIENT_ID: ${{ secrets.IMGUR_CLIENT_ID }}
           GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
         run: |
-
           $ErrorActionPreference = "Stop"
 
           $logPath = "cypress-output.log"
@@ -79,9 +77,7 @@ jobs:
           }
 
           $screenshotsDir = "cypress/screenshots"
-
           $message = "⚠️ **PB Health Check**`n`n🟥 **Hatalı Hesaplar:**`n"
-          $allImgurLinks = @()
 
           foreach ($errMsg in $errorMessages) {
               $pattern = "HATA:\s*(https?:\/\/[^\s]+)\s*→\s*(.+)"
@@ -93,32 +89,23 @@ jobs:
                   $desc = $errMsg
               }
 
-                $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
+              $fileNameBase = ($link -replace 'https?:\/\/|\/', '_').Trim('_').ToLower()
 
-                $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Filter *.png -ErrorAction SilentlyContinue |
-                  Where-Object { $_.Name -like "*$fileNameBase*" } |
-                  Select-Object -First 1
-
+              $screenshotPath = Get-ChildItem -Path $screenshotsDir -Recurse -Filter *.png -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name.ToLower() -like "*$fileNameBase*" } |
+                Select-Object -First 1
 
               if ($null -ne $screenshotPath) {
                   Write-Host "Ekran görüntüsü bulundu: $($screenshotPath.FullName)"
                   $imgurLink = Upload-ImgurImage $screenshotPath.FullName
                   if ($imgurLink) {
                       $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: $imgurLink`n`n"
-                      $allImgurLinks += $imgurLink
                   } else {
-                      $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: (yüklenemedi) $link`n`n"
+                      $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: (yüklenemedi)`n`n"
                   }
               } else {
                   Write-Warning "Ekran görüntüsü bulunamadı: $fileNameBase"
-                  $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: (bulunamadı) $link`n`n"
-              }
-          }
-
-          if ($allImgurLinks.Count -gt 0) {
-              $message += "`n📸 **Tüm Ekran Görüntüleri:**`n"
-              foreach ($imgLink in $allImgurLinks) {
-                  $message += "$imgLink`n"
+                  $message += "❌ Link: $link `n → $desc `n🔗 Ekran Görüntüsü: (bulunamadı)`n`n"
               }
           }
 
